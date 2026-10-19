@@ -1,0 +1,22 @@
+.text-viewer-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background-color: #1e293b;
+  border-radius: 8px;
+  border: 1px solid #334155;
+}
+
+.text-output {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: monospace;
+  background-color: #0f172a;
+  padding: 1rem;
+  border-radius: 4px;
+  color: #38bdf8;
+}
+
+.error-message {
+  color: #f87171;
+}
