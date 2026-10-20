@@ -1,16 +1,32 @@
-import Banner from './Components/Banner/Banner';
-import './App.css';
+import Header from './Components/Header/Header';
+import Home from './Sections/Home/Home';
+import Projects from './Sections/Projects/Projects';
+import Skills from './Sections/Skills/Skills';
+import Contact from './Sections/Contact/Contact';
+import Footer from './Components/Footer/Footer';
+import './App.scss';
 
-export default function App() {
+function App() {
   return (
-    <main className="app-container">
-      <header className="app-header">
-        <h1>Alexandru Dumitru</h1>
-        <p>Web Developer & Software Engineering Student</p>
-      </header>
-      <section className="content-section">
-        <Banner />
-      </section>
-    </main>
+    <div className="app">
+      <Header />
+      <main className="main-content">
+        <section id="banner">
+          <Home />
+        </section>
+        <section id="projects">
+          <Projects />
+        </section>
+        <section id="skills">
+          <Skills />
+        </section>
+        <section id="contact">
+          <Contact />
+        </section>
+      </main>
+      <Footer />
+    </div>
   );
 }
+
+export default App;
