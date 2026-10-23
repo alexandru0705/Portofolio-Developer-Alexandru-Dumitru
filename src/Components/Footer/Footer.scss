@@ -1,0 +1,194 @@
+@use '../../Styles/variables' as *;
+
+/*
+ * Footer — Milestone 7
+ * --------------------------------------------------------------------------
+ * Minimal, editorial site footer (BEM block: `site-footer`). A clean top
+ * border separates it from the Contact section above; identity/colophon on
+ * the left, quick links + "Retour en haut" CTA on the right. Stacks to a
+ * single column on narrow viewports (<768px).
+ *
+ * Session rules honored:
+ *   - Tokens sourced from `Styles/variables.scss` (`$text-muted`,
+ *     `$bg-primary`, `$transition-base`, `$accent-color`, `$accent-muted`,
+ *     `$shadow-sm`).
+ *   - `overflow: clip` on the inner container — never `overflow: hidden`.
+ *   - Zero inline layout CSS; pure BEM; W3C CSS Level 3 compliant.
+ *   - Visible `:focus-visible` styles on links and the CTA button.
+ */
+
+.site-footer {
+  position: relative;
+  margin-top: 3rem;
+  padding: 2rem 0 2.5rem 0;
+  border-top: 1px solid rgba($text-main, 0.15);
+  background-color: $bg-primary;
+  color: $text-muted;
+}
+
+.site-footer__inner {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $layout-gap;
+  overflow: clip;
+}
+
+/* ==========================================================================
+   Identity / colophon
+   ========================================================================== */
+.site-footer__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.site-footer__copyright {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: $text-main;
+}
+
+.site-footer__colophon {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: $text-muted;
+}
+
+/* ==========================================================================
+   Actions: quick links + "Retour en haut" CTA
+   ========================================================================== */
+.site-footer__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.site-footer__links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+}
+
+.site-footer__link-item {
+  display: inline-flex;
+}
+
+.site-footer__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.85rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $text-main;
+  text-decoration: none;
+  background-color: transparent;
+  border: 1px solid rgba($text-main, 0.18);
+  border-radius: 0.4rem;
+  transition: color $transition-base,
+              border-color $transition-base,
+              background-color $transition-base;
+
+  &:hover {
+    color: $accent-color;
+    border-color: $accent-color;
+    background-color: rgba($accent-color, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 3px solid $accent-color;
+    outline-offset: 2px;
+  }
+}
+
+.site-footer__top {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 1.1rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: $bg-primary;
+  background-color: $accent-color;
+  border: none;
+  border-radius: 0.4rem;
+  box-shadow: $shadow-sm;
+  cursor: pointer;
+  transition: background-color $transition-base,
+              transform $transition-base,
+              box-shadow $transition-base;
+
+  &:hover {
+    background-color: $accent-muted;
+    transform: translateY(-1px);
+    box-shadow: $shadow-sm;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    outline: 3px solid $accent-color;
+    outline-offset: 2px;
+  }
+}
+
+/* ==========================================================================
+   Responsive: stacked on mobile (<768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .site-footer {
+    padding: 1.5rem 0 2rem 0;
+  }
+
+  .site-footer__inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .site-footer__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .site-footer__links {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .site-footer__link {
+    flex: 1 1 auto;
+  }
+
+  .site-footer__top {
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   Reduced motion: disable non-essential transitions
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .site-footer__link,
+  .site-footer__top {
+    transition: none;
+  }
+
+  .site-footer__top:hover {
+    transform: none;
+  }
+}

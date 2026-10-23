@@ -1,0 +1,147 @@
+@use 'sass:color';
+@use '../../Styles/variables' as *;
+
+/*
+ * Projects section — Milestone 3.
+ *
+ * Architecture: a clean, responsive multi-column card grid driven by a
+ * category filter bar. The nested internal preview pane
+ * (`__preview-pane` / `__preview-sticky` / `__preview-card`) has been
+ * COMPLETELY REMOVED; full project details now live in `ProjectModal`.
+ *
+ * Grid (session requirement 1):
+ *   `grid-template-columns: repeat(auto-fill, minmax(320px, 1fr))`
+ * so the number of columns adapts fluidly to the right content pane
+ * width (280px sidebar + fluid stream).
+ *
+ * No `overflow: hidden` anywhere — bounded containment uses `overflow:
+ * clip` where needed (session rule 5). No bare `line-clamp` — only the
+ * standard vendor-prefixed combination (session rule 4).
+ */
+
+.projects-section {
+  position: relative;
+  padding: 2rem 0;
+
+  &__heading {
+    font-size: 2.5rem;
+    margin: 0 0 1.5rem 0;
+    color: $text-main;
+  }
+
+  /* ==========================================================================
+     Category Filter Bar
+     ========================================================================== */
+  &__filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0 0 2rem 0;
+    padding: 0.5rem;
+    background-color: $bg-secondary;
+    border-radius: 0.75rem;
+    box-shadow: $shadow-sm;
+  }
+
+  &__filter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: $text-muted;
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color $transition-base,
+                color $transition-base,
+                border-color $transition-base;
+
+    &:hover {
+      background-color: rgba($accent-muted, 0.15);
+      color: $accent-color;
+      border-color: $accent-muted;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $accent-color;
+      outline-offset: 2px;
+    }
+  }
+
+  &__filter--active {
+    background-color: $accent-color;
+    color: $bg-primary;
+    border-color: $accent-color;
+
+    &:hover {
+      background-color: color.scale($accent-color, $lightness: -10%);
+      color: $bg-primary;
+      border-color: color.scale($accent-color, $lightness: -10%);
+    }
+  }
+
+  /* ==========================================================================
+     Responsive Card Grid
+     ========================================================================== */
+  &__grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: $layout-gap;
+  }
+
+  &__grid-item {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &--empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+  }
+
+  &__empty-message {
+    font-size: 1rem;
+    color: $text-muted;
+    text-align: center;
+  }
+}
+
+/* ==========================================================================
+   Responsive: single column on very narrow viewports
+   ========================================================================== */
+@media (max-width: 420px) {
+  .projects-section {
+    &__grid {
+      grid-template-columns: 1fr;
+    }
+
+    &__filter-bar {
+      gap: 0.35rem;
+    }
+
+    &__filter {
+      font-size: 0.75rem;
+      padding: 0.4rem 0.75rem;
+    }
+  }
+}
+
+/* ==========================================================================
+   Reduced motion: disable non-essential transitions
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .projects-section__filter {
+    transition: none;
+  }
+}

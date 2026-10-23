@@ -1,6 +1,37 @@
-$bg-primary: #ebf8f6;
-$bg-secondary: #f6ecf4;
-$text-main: #023029;
-$text-muted: #368379;
-$accent-color: #e382d0; // Clean professional blue accent
-$error-color: #e23f12;
+/* ==========================================================================
+   Transition Tokens
+   ========================================================================== */
+$transition-standard:    0.7s ease;   /* Ideal for scroll shadows, active states */
+$transition-base:        0.25s ease;  /* Ideal for menus, panel fades, hover borders */
+$transition-smooth:      0.35s ease;  /* Ideal for accordion/modal transforms */
+
+/* ==========================================================================
+   Color Tokens
+   ========================================================================== */
+$bg-primary:             #feede8;
+$bg-secondary:           #f4e0ff;
+$text-main:              #3b1c12;
+$text-muted:             #8d572e;
+$accent-color:           #de7070;
+$accent-muted:           #ca70de;
+$error-color:            #e23f12;
+
+/* ==========================================================================
+   Elevation & Box Shadows
+   ========================================================================== */
+$shadow-sm:              0 4px 4px rgba($text-main, 0.3);
+$shadow-md:              0 8px 8px rgba($text-main, 0.6);
+$shadow-top:             0 -8px 8px rgba($text-main, 0.6);
+
+/* ==========================================================================
+   Split-Pane Layout Tokens
+   ========================================================================== */
+$sidebar-width:          280px;   /* Fixed width of the navigation drawer/pane */
+$sidebar-gutter:         1.25rem; /* Padding inside the sidebar */
+
+$preview-gutter:         2rem;    /* Padding inside the right preview section */
+$preview-mobile-gutter:  1rem;    /* Fallback gutter when collapsed on mobile */
+$layout-gap:             2rem;    /* Gap between sidebar and preview */
+
+/* Pinned Header Height within Preview */
+$header-pinned-height:   70px;

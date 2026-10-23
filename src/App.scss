@@ -1,4 +1,21 @@
-@use './styles/variables' as *;
+@use './Styles/variables' as *;
+
+/* ==========================================================================
+   Milestone 1 — Global Page Layout Skeleton
+   --------------------------------------------------------------------------
+   Layout contract:
+   1. Hero presentation section (#banner / .app__banner) spans the full
+      viewport height (min-height: 100vh) and sits above the split.
+   2. Below the hero, a two-pane split layout:
+      - Left pane (.app__sidebar): fixed $sidebar-width, pinned via
+        `position: sticky; top: 0; height: 100vh`. It engages visually once
+        the viewport scrolls past the hero. Containment uses `overflow: clip`
+        — never `overflow: hidden` (session rule 5), which would create a
+        scroll container and break sticky positioning.
+      - Right pane (.app__content): fluid, scrollable stream holding the
+        Skills, Projects, Contact sections and the Footer.
+   All tokens are referenced from `Styles/variables.scss`.
+   ========================================================================== */
 
 body {
   margin: 0;
@@ -15,11 +32,153 @@ body {
   flex-direction: column;
 }
 
-.main-content {
-  flex: 1;
-  padding-top: 70px; 
+/* ==========================================================================
+   Hero Presentation Section
+   ========================================================================== */
+.app__banner {
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+  scroll-margin-top: $header-pinned-height;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-section {
-  scroll-margin-top: 70px;
+/* ==========================================================================
+   Global Split Layout (below Hero)
+   ========================================================================== */
+.app__split {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  flex: 1;
+  gap: $layout-gap;
+}
+
+/* ==========================================================================
+   Left Navigation Pane (sticky, engages after the hero)
+   --------------------------------------------------------------------------
+   `overflow: clip` (and not `overflow: hidden`) keeps the pane as pure
+   visual containment without turning it into a scroll container, which is
+   required for `position: sticky` on the inner wrapper to resolve
+   against the document scrollport (session rule 5).
+   ========================================================================== */
+.app__sidebar {
+  flex: 0 0 $sidebar-width;
+  width: $sidebar-width;
+  box-sizing: border-box;
+  padding: $sidebar-gutter;
+  overflow: clip;
+  background-color: $bg-secondary;
+  box-shadow: $shadow-sm;
+}
+
+.app__sidebar-nav {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  box-sizing: border-box;
+  padding: $header-pinned-height 0 0 0;
+  overflow: clip;
+  display: flex;
+  flex-direction: column;
+}
+
+.app__sidebar-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.app__sidebar-item {
+  display: block;
+  width: 100%;
+}
+
+.app__sidebar-link {
+  display: block;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  box-sizing: border-box;
+  margin: 0;
+  font: inherit;
+  font-weight: 600;
+  color: $text-main;
+  text-align: left;
+  text-decoration: none;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color $transition-base,
+              color $transition-base,
+              border-color $transition-base;
+
+  &:hover {
+    background-color: rgba($accent-muted, 0.15);
+    border-color: $accent-muted;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $accent-color;
+    outline-offset: 2px;
+  }
+}
+
+.app__sidebar-link--active {
+  color: $accent-color;
+  background-color: rgba($accent-color, 0.12);
+  border-color: $accent-color;
+}
+
+/* ==========================================================================
+   Right Content Pane (fluid scrollable stream)
+   ========================================================================== */
+.app__content {
+  flex: 1 1 auto;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: $preview-gutter;
+  display: flex;
+  flex-direction: column;
+  gap: $layout-gap;
+}
+
+.app__section {
+  scroll-margin-top: $header-pinned-height;
+}
+
+/* ==========================================================================
+   Responsive collapse
+   --------------------------------------------------------------------------
+   On narrow viewports the split stacks vertically and the sticky pinning
+   is released so the navigation pane flows with the content. Gutter
+   falls back to $preview-mobile-gutter per the token contract.
+   ========================================================================== */
+@media (max-width: 768px) {
+  .app__split {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .app__sidebar {
+    flex: 0 0 auto;
+    width: 100%;
+    padding: $sidebar-gutter $preview-mobile-gutter;
+  }
+
+  .app__sidebar-nav {
+    position: static;
+    height: auto;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .app__content {
+    padding: $preview-mobile-gutter;
+  }
 }

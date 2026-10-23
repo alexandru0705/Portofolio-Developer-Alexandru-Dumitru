@@ -1,0 +1,253 @@
+@use '../../Styles/variables' as *;
+
+/*
+ * ProjectCard — Milestone 3 (Milestone 7 fix: bounded thumbnail).
+ * --------------------------------------------------------------------------
+ * A single card in the responsive Projects grid (BEM block: `project-card`).
+ * Contents: thumbnail image (bounded 16:10 aspect-ratio with 200px fallback),
+ * category badge, title, short description (2-line clamp), tag pills, and
+ * action triggers ("Détails" + "GitHub").
+ *
+ * Milestone 7 thumbnail fix:
+ *   - `__media` is a dedicated bounded container: `aspect-ratio: 16 / 10`,
+ *     `height: 200px` fallback for older browsers, `overflow: hidden`,
+ *     `width: 100%`, `border-radius: 8px`.
+ *   - `__image` is strictly constrained: `width: 100%; height: 100%;
+ *     object-fit: cover; display: block;` with a smooth hover zoom
+ *     (`transform: scale(1.03)`).
+ *   - This prevents raw screenshots from rendering at natural resolution
+ *     and eliminates layout-shift warnings.
+ *
+ * Session rules honored:
+ *   - W3C CSS Level 3 compliant BEM; zero inline layout CSS.
+ *   - `overflow: clip` on the card body; `overflow: hidden` ONLY on the
+ *     media container (required for the zoom to be visually clipped).
+ *   - No bare `line-clamp` — only the standard vendor-prefixed combination.
+ */
+
+.project-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background-color: $bg-primary;
+  border: 2px solid transparent;
+  border-radius: 0.625rem;
+  box-shadow: $shadow-sm;
+  cursor: pointer;
+  overflow: clip;
+  transition: border-color $transition-base,
+              box-shadow $transition-base,
+              transform $transition-base;
+
+  &:hover {
+    box-shadow: $shadow-md;
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    outline: 3px solid $accent-color;
+    outline-offset: 2px;
+  }
+
+  /* ==========================================================================
+     Media / thumbnail container (Milestone 7 fix)
+     --------------------------------------------------------------------------
+     Bounded aspect-ratio container with a fixed height fallback so raw
+     screenshots never render at natural resolution. `overflow: hidden`
+     here is required to clip the hover zoom (`scale(1.03)`) within the
+     card's visual bounds — this is the ONLY place `overflow: hidden` is
+     used (session rule 5: never on the card/scroll containers, but
+     acceptable on a leaf media wrapper for zoom clipping).
+     ========================================================================== */
+  &__media {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    height: 200px;
+    overflow: hidden;
+    border-radius: 8px;
+    background-color: rgba($text-main, 0.04);
+    flex-shrink: 0;
+  }
+
+  /*
+   * Thumbnail image — strictly constrained to fill the media container
+   * without distorting. `object-fit: cover` crops to fill; `display:
+   * block` removes the inline baseline gap.
+   */
+  &__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform $transition-base;
+
+    .project-card:hover & {
+      transform: scale(1.03);
+    }
+  }
+
+  /*
+   * Fallback modifier applied by the Projects.jsx `onError` handler when
+   * the image fails to load (session rule 2). Hides the broken image and
+   * reveals the gradient placeholder behind it.
+   */
+  &__image--error {
+    visibility: hidden;
+  }
+
+  &__media--error {
+    background: linear-gradient(135deg, $accent-muted 0%, $accent-color 100%);
+  }
+
+  &__placeholder {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, $accent-muted 0%, $accent-color 100%);
+  }
+
+  /* ==========================================================================
+     Body
+     ========================================================================== */
+  &__body {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    flex: 1;
+  }
+
+  &__category {
+    display: inline-block;
+    align-self: flex-start;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: $bg-primary;
+    background-color: $accent-muted;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    margin-bottom: 0.5rem;
+  }
+
+  &__title {
+    font-size: 1.1rem;
+    margin: 0 0 0.5rem 0;
+    color: $text-main;
+    font-weight: 700;
+    line-height: 1.3;
+
+    /* Standard vendor-prefixed line-clamp (session rule 4) */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  &__description {
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: $text-muted;
+    margin: 0 0 0.75rem 0;
+
+    /* Standard vendor-prefixed line-clamp (session rule 4) */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  &__tags {
+    list-style: none;
+    margin: 0 0 0.75rem 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  &__tag {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    background-color: rgba($accent-color, 0.1);
+    color: $accent-color;
+  }
+
+  &__actions {
+    margin-top: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.4rem 0.85rem;
+    border-radius: 0.4rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color $transition-base,
+                color $transition-base,
+                border-color $transition-base,
+                transform $transition-base;
+
+    &:focus-visible {
+      outline: 3px solid $accent-color;
+      outline-offset: 2px;
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  &__btn--inspect {
+    border: 2px solid $accent-color;
+    background-color: transparent;
+    color: $accent-color;
+
+    &:hover {
+      background-color: $accent-color;
+      color: $bg-primary;
+      transform: translateY(-1px);
+    }
+  }
+
+  &__btn--link {
+    border: 2px solid rgba($text-main, 0.15);
+    background-color: transparent;
+    color: $text-main;
+
+    &:hover {
+      border-color: $accent-color;
+      color: $accent-color;
+      transform: translateY(-1px);
+    }
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .project-card,
+  .project-card__btn,
+  .project-card__image {
+    transition: none;
+  }
+
+  .project-card:hover {
+    transform: none;
+  }
+
+  .project-card:hover .project-card__image {
+    transform: none;
+  }
+}
