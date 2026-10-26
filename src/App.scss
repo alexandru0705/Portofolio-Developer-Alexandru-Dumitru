@@ -172,7 +172,9 @@ body {
    ========================================================================== */
 @media (max-width: 768px) {
   .app__split {
+    display: flex;
     flex-direction: column;
+    width: 100%;
     gap: 0;
   }
 
@@ -190,6 +192,10 @@ body {
   }
 
   .app__content {
-    padding: $preview-mobile-gutter;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+    padding: 1rem;
   }
 }

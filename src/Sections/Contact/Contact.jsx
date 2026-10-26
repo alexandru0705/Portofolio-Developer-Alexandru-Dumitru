@@ -206,8 +206,8 @@ function Contact() {
               alt="Alexandru Dumitru"
               className="contact-section__portrait"
               loading="lazy"
-              width={360}
-              height={450}
+              width={2311}
+              height={2586}
               onError={(e) => {
                 // Graceful defensive fallback if image fails to load
                 e.currentTarget.style.display = 'none';

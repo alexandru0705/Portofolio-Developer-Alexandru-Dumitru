@@ -312,21 +312,29 @@
 @media (max-width: 768px) {
   .projects-section {
     /*
-     * Stacked layout: the card viewport spans the full first row; the
-     * prev/next arrows sit on a second row, flanking the center gutter
-     * (grid placement — no order conflicts).
+     * Stacked layout: the card viewport spans the full width and is
+     * centered; the prev/next arrows sit on a second row, flanking the
+     * center gutter (grid placement — no order conflicts).
      */
     &__carousel-frame {
       display: grid;
-      grid-template-columns: auto 1fr auto;
+      grid-template-columns: 1fr;
       grid-template-rows: auto auto;
       align-items: center;
+      justify-items: center;
+      width: 100%;
       gap: 0.5rem 0.75rem;
     }
 
     &__viewport {
       grid-column: 1 / -1;
       grid-row: 1;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
     }
 
     &__nav {
@@ -338,11 +346,33 @@
     &__nav--prev {
       grid-column: 1;
       grid-row: 2;
+      justify-self: start;
     }
 
     &__nav--next {
-      grid-column: 3;
+      grid-column: 1;
       grid-row: 2;
+      justify-self: end;
+    }
+
+    &__slide {
+      width: 100%;
+      max-width: 100%;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+
+    &__slide .project-card {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    &__slide .project-card__media,
+    &__slide .project-card__image {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     &__controls {

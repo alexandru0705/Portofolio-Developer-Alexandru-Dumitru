@@ -437,6 +437,10 @@ function Navigation() {
     setDrawerOpen(false);
   }
 
+  const asideClass = drawerOpen
+    ? 'navigation navigation--open'
+    : 'navigation';
+
   const panelClass = drawerOpen
     ? 'navigation__panel navigation__panel--open'
     : 'navigation__panel';
@@ -451,7 +455,7 @@ function Navigation() {
     : 'Say hello →';
 
   return (
-    <aside className="navigation" aria-label="Site navigation">
+    <aside className={asideClass} aria-label="Site navigation">
       <button
         type="button"
         className="navigation__toggle"
