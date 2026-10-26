@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useLanguage } from '../../Context/LanguageContext';
 import './Navigation.scss';
 
 /*
@@ -11,6 +12,30 @@ import './Navigation.scss';
  *   - Containment uses `overflow: clip` — never `overflow: hidden` —
  *     so the pane is pure visual containment and sticky positioning still
  *     resolves against the document scrollport (session rule 5).
+ *
+ * Scroll alignment contract:
+ *   - Section anchors rely on the browser's native `scroll-margin-top`
+ *     (1rem) set on the section containers in SCSS — no custom
+ *     coordinate arithmetic in JS. `scrollIntoView({ block: 'start' })`
+ *     honors it directly, so jumps to `#skills`/`#projects`/`#contact`
+ *     land flush at the top of the split without sidebar jitter.
+ *   - `#banner` (Home) always scrolls to the top of the document.
+ *
+ * Scroll-spy contract:
+ *   - Sections are tracked by real-time viewport presence via
+ *     `getBoundingClientRect()`. A section becomes active the moment its
+ *     top reaches or passes a trigger line at 35% of the viewport height,
+ *     measured from the TOP of the viewport (not the document). This keeps
+ *     the highlight viewport-relative, so the last section (`#contact`)
+ *     can never overshoot onto earlier sections while they are still
+ *     being viewed.
+ *   - The `scroll` listener is throttled through `requestAnimationFrame`
+ *     (with the pending frame cancelled on unmount) and bound with
+ *     `{ passive: true }` for fluid scrolling.
+ *   - On link click the active state is locked to the clicked target
+ *     immediately and scroll-spy is suspended until the smooth animation
+ *     settles, so the pill snaps without drifting past intermediate
+ *     sections during the animation.
  *
  * Accessibility contract:
  *   - `<nav aria-label="Main Navigation">` wrapper.
@@ -27,20 +52,63 @@ import './Navigation.scss';
  *     drawer overlay with a backdrop.
  *   - `body` scroll is locked while the drawer is open; the lock is always
  *     released on toggle-off and on unmount (defensive rule 2).
+ *
+ * Bilingual contract (Milestone 9 refactor):
+ *   - `useLanguage()` is consumed for localized copy only (brand role,
+ *     nav labels, "Say hello"). The FR | EN language toggle is the single
+ *     canonical switcher and lives EXCLUSIVELY in the Home hero
+ *     (`Home.jsx`, `.home-section__lang-switch`) — this sidebar carries no
+ *     language controls, and neither does the top Header.
  */
 const NAV_ITEMS = [
-  { id: 'banner', label: 'Home' },
-  { id: 'skills', label: 'Skills' },
-  { id: 'projects', label: 'Projects' },
-  { id: 'contact', label: 'Contact' },
+  { id: 'banner', labelKey: 'home' },
+  { id: 'skills', labelKey: 'skills' },
+  { id: 'projects', labelKey: 'projects' },
+  { id: 'contact', labelKey: 'contact' },
 ];
 
 const SOCIAL_LINKS = [
   { id: 'github', label: 'GitHub', href: 'https://github.com/alexandru0705', icon: 'GH' },
 ];
 
-const SCROLL_OFFSET = 70;
 const IDLE_DELAY_MS = 150;
+const SCROLL_LOCK_MS = 750;
+const TRIGGER_LINE_FRACTION = 0.35;
+
+/*
+ * Resolves the active section id from real-time viewport presence.
+ *
+ * A trigger line sits at `window.innerHeight * TRIGGER_LINE_FRACTION`
+ * (35% down from the top of the viewport). Sections are tested from the
+ * LAST to the FIRST; the first one whose top (`getBoundingClientRect().top`)
+ * has reached or passed that line is the active section. Sections that
+ * are entirely below the line (their top still under the 35% mark) can
+ * never win, which is what prevents `#contact` from stealing the
+ * highlight while `#projects` is still being viewed.
+ *
+ * @param {string[]} sectionIds - ordered section ids to test
+ * @returns {string} the active section id ('banner' as the safe fallback)
+ */
+function getActiveSection(sectionIds) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return 'banner';
+  }
+
+  const threshold = window.innerHeight * TRIGGER_LINE_FRACTION;
+
+  for (let i = sectionIds.length - 1; i >= 0; i -= 1) {
+    const id = sectionIds[i];
+    const el = document.getElementById(id);
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      if (rect.top <= threshold) {
+        return id;
+      }
+    }
+  }
+
+  return 'banner';
+}
 
 function isBrowserEnvironment() {
   return typeof window !== 'undefined' && typeof document !== 'undefined';
@@ -48,8 +116,8 @@ function isBrowserEnvironment() {
 
 /*
  * Normalizes the raw nav model into a safe render shape (session rule 2):
- *   - id   : non-empty string (entries without a valid id are dropped)
- *   - label: non-empty string (falls back to the id)
+ *   - id      : non-empty string (entries without a valid id are dropped)
+ *   - labelKey: non-empty translation key (falls back to the id)
  */
 function sanitizeNavItems(items) {
   if (!Array.isArray(items)) {
@@ -64,8 +132,8 @@ function sanitizeNavItems(items) {
     })
     .map((entry) => ({
       id: entry.id,
-      label: typeof entry.label === 'string' && entry.label.length > 0
-        ? entry.label
+      labelKey: typeof entry.labelKey === 'string' && entry.labelKey.length > 0
+        ? entry.labelKey
         : entry.id,
     }));
 }
@@ -102,10 +170,14 @@ function sanitizeSocialLinks(links) {
 }
 
 function Navigation() {
+  const { t } = useLanguage();
   const [activeSection, setActiveSection] = useState('banner');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const activeSectionRef = useRef('banner');
   const idleTimerRef = useRef(null);
+  const lockTimerRef = useRef(null);
+  const scrollLockedRef = useRef(false);
+  const rafIdRef = useRef(null);
   const previousOverflowRef = useRef('');
   const toggleRef = useRef(null);
 
@@ -140,14 +212,43 @@ function Navigation() {
     }, delayMs);
   }, [clearIdleTimer]);
 
+  const clearLockTimer = useCallback(() => {
+    if (lockTimerRef.current !== null) {
+      if (isBrowserEnvironment()) {
+        window.clearTimeout(lockTimerRef.current);
+      }
+      lockTimerRef.current = null;
+    }
+  }, []);
+
   /*
-   * Scroll-spy (session rule 5): active highlight engages INSTANTLY on
-   * every scroll tick and the effect window deactivates via a ~150ms
-   * debounced idle timer. The `scroll` listener is bound with
-   * `{ passive: true }` and removed symmetrically on unmount
-   * (session rule 2). Section boundary detection reads element offsets
-   * inside a try/catch so a transient DOM measurement failure can never
-   * break the scroll loop.
+   * Suspends scroll-spy updates for a short window after a link click so
+   * the active pill stays locked to the clicked target while the smooth
+   * animation crosses intermediate sections. The lock is always released
+   * on unmount via cleanup (defensive rule 2).
+   */
+  const lockScrollSpy = useCallback((delayMs) => {
+    clearLockTimer();
+    scrollLockedRef.current = true;
+    if (!isBrowserEnvironment()) {
+      return;
+    }
+    lockTimerRef.current = window.setTimeout(() => {
+      lockTimerRef.current = null;
+      scrollLockedRef.current = false;
+    }, delayMs);
+  }, [clearLockTimer]);
+
+  /*
+   * Scroll-spy (scroll-spy contract): sections are evaluated by their
+   * real-time viewport presence via `getBoundingClientRect()` against a
+   * trigger line at 35% of the viewport height. The high-frequency
+   * `scroll` listener is bound with `{ passive: true }`, throttled
+   * through `requestAnimationFrame` (at most one measurement per frame,
+   * keeping scrolling fluid), and the pending frame is cancelled in the
+   * symmetric unmount cleanup (session rule 2). All DOM/window access is
+   * guarded and the measurement runs inside a try/catch so a transient
+   * failure can never break the scroll loop.
    */
   useEffect(() => {
     if (!isBrowserEnvironment()) {
@@ -156,29 +257,12 @@ function Navigation() {
 
     const validIds = navItems.map((entry) => entry.id);
 
-    function handleScroll() {
-      scheduleIdleReset(IDLE_DELAY_MS);
-
+    function updateActiveSection() {
+      if (scrollLockedRef.current) {
+        return;
+      }
       try {
-        const scrollOffset = window.scrollY
-          || (document.documentElement && document.documentElement.scrollTop)
-          || 0;
-
-        let current = validIds.length > 0 ? validIds[0] : 'banner';
-
-        for (let i = 0; i < validIds.length; i += 1) {
-          const element = document.getElementById(validIds[i]);
-          if (!element) {
-            continue;
-          }
-          const sectionTop = element.getBoundingClientRect().top
-            + window.scrollY
-            - SCROLL_OFFSET;
-          if (scrollOffset >= sectionTop) {
-            current = validIds[i];
-          }
-        }
-
+        const current = getActiveSection(validIds);
         if (current !== activeSectionRef.current) {
           setActiveSection(current);
         }
@@ -188,14 +272,31 @@ function Navigation() {
       }
     }
 
+    function handleScroll() {
+      scheduleIdleReset(IDLE_DELAY_MS);
+      if (rafIdRef.current !== null) {
+        return;
+      }
+      rafIdRef.current = window.requestAnimationFrame(() => {
+        rafIdRef.current = null;
+        updateActiveSection();
+      });
+    }
+
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      if (rafIdRef.current !== null) {
+        window.cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
       clearIdleTimer();
+      clearLockTimer();
+      scrollLockedRef.current = false;
     };
-  }, [navItems, scheduleIdleReset, clearIdleTimer]);
+  }, [navItems, scheduleIdleReset, clearIdleTimer, clearLockTimer]);
 
   /*
    * Closes the mobile drawer on `Escape` (accessibility contract). The
@@ -274,37 +375,50 @@ function Navigation() {
     }
   }, [drawerOpen]);
 
-  function handleNavClick(sectionId) {
-    if (typeof sectionId !== 'string' || sectionId.length === 0) {
+  /*
+   * Section jump handler (scroll alignment contract):
+   *   1. Immediately lock the active section to the clicked target (both
+   *      state and ref) and suspend scroll-spy for a short window, so the
+   *      pill snaps to the target without drifting while the smooth
+   *      animation crosses intermediate sections.
+   *   2. `#banner` scrolls to the top of the document cleanly.
+   *   3. In-split sections (`#skills`, `#projects`, `#contact`) use the
+   *      standard `scrollIntoView({ block: 'start' })`, which natively
+   *      honors the `scroll-margin-top: 1rem` set on the section
+   *      containers — no custom coordinate arithmetic. Guarded native
+   *      `window.scrollTo` fallback if `scrollIntoView` throws
+   *      (e.g. a `display: none` ancestor) (session rule 2).
+   */
+  function handleNavClick(targetId) {
+    if (typeof targetId !== 'string' || targetId.length === 0) {
       return;
     }
-    if (!isBrowserEnvironment()) {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
       return;
     }
 
-    setActiveSection(sectionId);
+    setActiveSection(targetId);
+    activeSectionRef.current = targetId;
+    lockScrollSpy(SCROLL_LOCK_MS);
     setDrawerOpen(false);
     scheduleIdleReset(IDLE_DELAY_MS);
 
-    const element = document.getElementById(sectionId);
-    if (!element) {
+    const target = document.getElementById(targetId);
+    if (!target) {
       return;
     }
 
-    /*
-     * Imperative scroll wrapped in try/catch with a native fallback
-     * (session rule 2): if `scrollIntoView` throws (e.g. a `display: none`
-     * ancestor), fall back to `window.scrollTo`.
-     */
     try {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (targetId === 'banner') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (scrollError) {
       void scrollError;
       try {
-        const targetTop = element.getBoundingClientRect().top
-          + window.scrollY
-          - SCROLL_OFFSET;
-        window.scrollTo({ top: targetTop, behavior: 'smooth' });
+        const top = target.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo({ top, behavior: 'smooth' });
       } catch (fallbackError) {
         void fallbackError;
       }
@@ -330,6 +444,11 @@ function Navigation() {
   const backdropClass = drawerOpen
     ? 'navigation__backdrop navigation__backdrop--open'
     : 'navigation__backdrop';
+
+  const navDictionary = t('nav') || {};
+  const sayHello = (typeof navDictionary.sayHello === 'string' && navDictionary.sayHello.length > 0)
+    ? navDictionary.sayHello
+    : 'Say hello →';
 
   return (
     <aside className="navigation" aria-label="Site navigation">
@@ -361,7 +480,7 @@ function Navigation() {
             <span className="navigation__monogram" aria-hidden="true">AD</span>
             <div className="navigation__brand-text">
               <span className="navigation__name">Alexandru Dumitru</span>
-              <span className="navigation__role">Full-Stack Developer</span>
+              <span className="navigation__role">{typeof t('hero.role') === 'string' ? t('hero.role') : 'Full-Stack Developer'}</span>
             </div>
           </div>
 
@@ -375,7 +494,7 @@ function Navigation() {
                     onClick={() => handleNavClick(entry.id)}
                     aria-current={activeSection === entry.id ? 'page' : undefined}
                   >
-                    {entry.label}
+                    {typeof navDictionary[entry.labelKey] === 'string' ? navDictionary[entry.labelKey] : entry.labelKey}
                   </button>
                 </li>
               ))}
@@ -402,7 +521,7 @@ function Navigation() {
               className="navigation__contact"
               href="mailto:alexandru0705@gmail.com"
             >
-              Say hello →
+              {sayHello}
             </a>
           </div>
 

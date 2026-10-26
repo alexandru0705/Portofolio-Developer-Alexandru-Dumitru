@@ -1,18 +1,36 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useLanguage } from '../../Context/LanguageContext';
 import { projectsData } from '../../Data/projectsData';
 import ProjectCard from '../../Components/ProjectCard/ProjectCard';
 import ProjectModal from '../../Components/ProjectModal/ProjectModal';
 import './Projects.scss';
 
 /*
- * Projects — Milestone 3
+ * Projects — Milestone 3 (Milestone 8: single-card showcase carousel)
  * --------------------------------------------------------------------------
- * A clean, responsive card grid with a category filter bar and modal
- * deep-dive integration. The nested internal preview pane
- * (`__preview-pane`) has been COMPLETELY REMOVED per the Milestone 3
- * contract: every project is now a first-class card in a multi-column
- * grid (`grid-template-columns: repeat(auto-fill, minmax(320px, 1fr))`),
- * and the full details + gallery live in an accessible `ProjectModal`.
+ * An editorial single-card carousel with a category filter bar and modal
+ * deep-dive integration. The multi-column grid has been REPLACED: exactly
+ * one project card is presented at a time in a centered carousel viewport
+ * (max-width 820px) that fits neatly below the filter bar. Full project
+ * details + gallery still live in the accessible `ProjectModal`.
+ *
+ * Carousel mechanics:
+ *   - `activeCategory` filter ("Tous" = all); switching filters resets
+ *     `currentIndex` to 0.
+ *   - `currentIndex` is always clamped to `[0, visibleProjects.length - 1]`
+ *     for rendering (a derived `safeIndex` guards against any out-of-range
+ *     drift when the filtered set shrinks).
+ *   - Previous (←) / Next (→) controls flank the card and support CIRCULAR
+ *     wrap-around (modulo arithmetic) — the carousel loops infinitely
+ *     between the last and first slides; the buttons stay enabled whenever
+ *     more than one project is visible. A zero-padded counter (`01 / 06`)
+ *     + bullet dots sit under the card.
+ *   - Arrow-key navigation: Left/Right arrows move the carousel while the
+ *     region has focus (the region is focusable via `tabIndex={0}`); the
+ *     `keydown` listener is bound on the region element and removed
+ *     symmetrically (event cleanup, session rule 2).
+ *   - Empty guard: if the filtered set is empty, a graceful empty state
+ *     replaces the carousel viewport.
  *
  * Asset resolution (GitHub Pages, session rule 3):
  *   Public-folder images referenced by `projectsData` are resolved through
@@ -108,6 +126,16 @@ function sanitizeProject(rawProject, index) {
     ? rawProject.liveUrl
     : undefined;
 
+  /*
+   * Bilingual deep-dive details for `ProjectModal` (see `projectsData.js`):
+   * a `{ fr, en }` object. Passed through as-is when it is a plain object
+   * (the modal resolves the active locale defensively); anything else
+   * degrades to `null` so the modal simply omits the details sections.
+   */
+  const modalDetails = (typeof rawProject.modalDetails === 'object' && rawProject.modalDetails !== null)
+    ? rawProject.modalDetails
+    : null;
+
   return {
     id,
     title,
@@ -117,6 +145,7 @@ function sanitizeProject(rawProject, index) {
     tags,
     githubUrl,
     liveUrl,
+    modalDetails,
   };
 }
 
@@ -125,13 +154,20 @@ function sanitizeProject(rawProject, index) {
  * projects. The "Tous" (All) pseudo-category is always first. Categories
  * are derived dynamically from the data so the filter bar never drifts
  * from the actual project set.
+ *
+ * @param {Array} projects - sanitized project objects
+ * @param {string} allFilterLabel - localized "all" label (projects.allFilter)
+ * @returns {string[]} the ordered category list
  */
-function deriveCategories(projects) {
+function deriveCategories(projects, allFilterLabel) {
+  const allLabel = (typeof allFilterLabel === 'string' && allFilterLabel.length > 0)
+    ? allFilterLabel
+    : 'Tous';
   if (!Array.isArray(projects)) {
-    return ['Tous'];
+    return [allLabel];
   }
   const seen = new Set();
-  const categories = ['Tous'];
+  const categories = [allLabel];
   for (let i = 0; i < projects.length; i += 1) {
     const project = projects[i];
     if (typeof project !== 'object' || project === null) {
@@ -148,10 +184,51 @@ function deriveCategories(projects) {
   return categories;
 }
 
+/*
+ * Clamps an arbitrary value into `[0, max]`. Guarded: returns 0 when the
+ * bounds are not finite non-negative numbers (session rule 2).
+ */
+function clampIndex(value, max) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return 0;
+  }
+  if (typeof max !== 'number' || !Number.isFinite(max) || max < 0) {
+    return 0;
+  }
+  const floored = Math.floor(value);
+  return Math.min(Math.max(floored, 0), Math.floor(max));
+}
+
+/*
+ * Zero-pads an index/total pair for the slide counter display
+ * (`1 / 6` → `01 / 06`).
+ */
+function formatCounter(index, total) {
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${pad(index)} / ${pad(total)}`;
+}
+
 function Projects() {
-  const [activeCategory, setActiveCategory] = useState('Tous');
+  const { t } = useLanguage();
+  const projectsDictionary = t('projects') || {};
+  const allFilter = (typeof projectsDictionary.allFilter === 'string' && projectsDictionary.allFilter.length > 0)
+    ? projectsDictionary.allFilter
+    : 'Tous';
+  /*
+   * Locale-change reset (the canonical React "adjust state when a value
+   * changes" pattern — no refs, no effect, no cascading renders): the
+   * active filter is clamped to the localized "all" label whenever the
+   * locale flips, so a selection stored under the previous locale never
+   * stops matching the derived category list and shows an empty carousel.
+   */
+  const [rawFilter, setRawFilter] = useState(allFilter);
+  const activeCategory = typeof rawFilter === 'string' && rawFilter.length > 0
+    ? rawFilter
+    : allFilter;
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [modalProject, setModalProject] = useState(null);
   const idleTimerRef = useRef(null);
+  const carouselRef = useRef(null);
 
   const projects = useMemo(() => {
     if (!Array.isArray(projectsData)) {
@@ -163,19 +240,24 @@ function Projects() {
   }, []);
 
   const categories = useMemo(
-    () => deriveCategories(projects),
-    [projects],
+    () => deriveCategories(projects, allFilter),
+    [projects, allFilter],
   );
 
   const visibleProjects = useMemo(() => {
     if (!Array.isArray(projects)) {
       return [];
     }
-    if (activeCategory === 'Tous') {
+    if (activeCategory === allFilter) {
       return projects;
     }
     return projects.filter((project) => project.category === activeCategory);
-  }, [projects, activeCategory]);
+  }, [projects, activeCategory, allFilter]);
+
+  const totalProjects = visibleProjects.length;
+  const safeIndex = clampIndex(currentIndex, totalProjects - 1);
+  const activeProject = totalProjects > 0 ? visibleProjects[safeIndex] : null;
+  const hasMultiple = totalProjects > 1;
 
   /*
    * Debounced idle timer (session rule 5): effect window deactivates
@@ -208,6 +290,35 @@ function Projects() {
   }, [clearIdleTimer]);
 
   /*
+   * Navigation step helpers, memoized so the keyboard-navigation effect's
+   * dependency list stays stable across renders (session rule 2: bound
+   * listeners must not be re-created on every render).
+   *
+   * Circular wrap-around: previous/next use modulo arithmetic so the
+   * carousel loops infinitely between the last and first slides — no
+   * linear clamping at the boundaries.
+   */
+  const goToNext = useCallback(() => {
+    if (totalProjects <= 1) return;
+    setCurrentIndex((previous) => (previous + 1) % totalProjects);
+    scheduleIdleReset(150);
+  }, [totalProjects, scheduleIdleReset]);
+
+  const goToPrevious = useCallback(() => {
+    if (totalProjects <= 1) return;
+    setCurrentIndex((previous) => (previous - 1 + totalProjects) % totalProjects);
+    scheduleIdleReset(150);
+  }, [totalProjects, scheduleIdleReset]);
+
+  const goToSlide = useCallback((targetIndex) => {
+    setCurrentIndex((previous) => {
+      const clamped = clampIndex(targetIndex, totalProjects - 1);
+      return clamped === previous ? previous : clamped;
+    });
+    scheduleIdleReset(150);
+  }, [totalProjects, scheduleIdleReset]);
+
+  /*
    * Body scroll lock while the modal is open (defensive rule 2). The
    * previous `overflow` value is captured and always restored on cleanup
    * — including on unmount — so the page never gets stuck locked.
@@ -231,11 +342,48 @@ function Projects() {
     }
   }, [modalProject]);
 
+  /*
+   * Keyboard navigation: Left/Right arrows move the carousel while the
+   * carousel region holds focus (the region is focusable via
+   * `tabIndex={0}`). Bound on the region element with `addEventListener`
+   * and removed symmetrically on unmount / re-render (event cleanup,
+   * session rule 2). Guarded for non-browser environments.
+   */
+  useEffect(() => {
+    const region = carouselRef.current;
+    if (!region || typeof region.addEventListener !== 'function') {
+      return undefined;
+    }
+
+    function handleKeyDown(event) {
+      if (!event || typeof event.key !== 'string') {
+        return;
+      }
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+        return;
+      }
+      if (typeof event.preventDefault === 'function') {
+        event.preventDefault();
+      }
+      if (event.key === 'ArrowLeft') {
+        goToPrevious();
+      } else {
+        goToNext();
+      }
+    }
+
+    region.addEventListener('keydown', handleKeyDown);
+    return () => {
+      region.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [totalProjects, goToNext, goToPrevious]);
+
   function handleCategorySelect(category) {
     if (typeof category !== 'string' || category.length === 0) {
       return;
     }
-    setActiveCategory(category);
+    setRawFilter(category);
+    setCurrentIndex(0);
     scheduleIdleReset(150);
   }
 
@@ -261,18 +409,27 @@ function Projects() {
 
   const hasProjects = Array.isArray(projects) && projects.length > 0;
 
+  const heading = typeof projectsDictionary.title === 'string' && projectsDictionary.title.length > 0
+    ? projectsDictionary.title
+    : 'Projects';
+  const emptyMessage = typeof projectsDictionary.empty === 'string' && projectsDictionary.empty.length > 0
+    ? projectsDictionary.empty
+    : 'No projects in this category.';
+  const projectUnit = typeof projectsDictionary.projectSingular === 'string' ? projectsDictionary.projectSingular : 'project';
+  const projectUnits = typeof projectsDictionary.projectPlural === 'string' ? projectsDictionary.projectPlural : 'projects';
+
   if (!hasProjects) {
     return (
       <div className="projects-section projects-section--empty">
-        <h2 className="projects-section__heading">Projects</h2>
-        <p className="projects-section__empty-message">No projects available.</p>
+        <h2 className="projects-section__heading">{heading}</h2>
+        <p className="projects-section__empty-message">{emptyMessage}</p>
       </div>
     );
   }
 
   return (
     <div className="projects-section">
-      <h2 className="projects-section__heading">Projects</h2>
+      <h2 className="projects-section__heading">{heading}</h2>
 
       <div
         className="projects-section__filter-bar"
@@ -292,23 +449,93 @@ function Projects() {
         ))}
       </div>
 
-      <ul className="projects-section__grid">
-        {visibleProjects.map((project) => (
-          <li key={project.id} className="projects-section__grid-item">
-            <ProjectCard
-              project={project}
-              onInspect={handleCardInspect}
-              imageSrc={project.images.length > 0 ? project.images[0] : undefined}
-              onError={handleCardImageError}
-            />
-          </li>
-        ))}
-      </ul>
-
-      {visibleProjects.length === 0 && (
+      {totalProjects === 0 ? (
         <p className="projects-section__empty-message">
-          No projects in this category.
+          {emptyMessage}
         </p>
+      ) : (
+        <div
+          className="projects-section__carousel"
+          ref={carouselRef}
+          tabIndex={0}
+          role="group"
+          aria-roledescription="carousel"
+          aria-label={`Project showcase, ${totalProjects} ${totalProjects === 1 ? projectUnit : projectUnits}`}
+        >
+          <div className="projects-section__carousel-frame">
+            <button
+              type="button"
+              className="projects-section__nav projects-section__nav--prev"
+              onClick={goToPrevious}
+              disabled={!hasMultiple}
+              aria-label="Previous project"
+            >
+              ←
+            </button>
+
+            <div
+              className="projects-section__viewport"
+              aria-live="polite"
+            >
+              {activeProject && (
+                <div
+                  key={activeProject.id}
+                  className="projects-section__slide"
+                >
+                  <ProjectCard
+                    project={activeProject}
+                    onSelectProject={handleCardInspect}
+                    imageSrc={activeProject.images.length > 0 ? activeProject.images[0] : undefined}
+                    onError={handleCardImageError}
+                    detailsLabel={typeof projectsDictionary.detailsBtn === 'string' && projectsDictionary.detailsBtn.length > 0
+                      ? projectsDictionary.detailsBtn
+                      : 'Détails'}
+                  />
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className="projects-section__nav projects-section__nav--next"
+              onClick={goToNext}
+              disabled={!hasMultiple}
+              aria-label="Next project"
+            >
+              →
+            </button>
+          </div>
+
+          <div className="projects-section__controls">
+            <span
+              className="projects-section__counter"
+              aria-hidden="true"
+            >
+              {formatCounter(safeIndex + 1, totalProjects)}
+            </span>
+
+            <div
+              className="projects-section__dots"
+              role="group"
+              aria-label="Choose project to display"
+            >
+              {visibleProjects.map((project, index) => (
+                <button
+                  key={project.id}
+                  type="button"
+                  className={`projects-section__dot${index === safeIndex ? ' projects-section__dot--active' : ''}`}
+                  aria-label={`Go to project ${index + 1} of ${totalProjects}: ${project.title}`}
+                  aria-current={index === safeIndex ? 'true' : undefined}
+                  onClick={() => goToSlide(index)}
+                />
+              ))}
+            </div>
+
+            <span className="projects-section__total" aria-hidden="true">
+              {totalProjects} {totalProjects === 1 ? projectUnit : projectUnits}
+            </span>
+          </div>
+        </div>
       )}
 
       {modalProject && (

@@ -23,7 +23,7 @@
   position: relative;
   padding: $sidebar-gutter;
   overflow: clip;
-  background-color: $bg-secondary;
+  background-color: rgba($text-muted, 0.15);
   box-shadow: $shadow-sm;
 }
 
@@ -85,7 +85,7 @@
   width: 3rem;
   height: 3rem;
   border-radius: 0.75rem;
-  background-color: $accent-muted;
+  background-color: rgba($accent-muted, 0.9);
   color: $bg-primary;
   font-weight: 700;
   font-size: 1.125rem;
@@ -161,12 +161,12 @@
               border-color $transition-base;
 
   &:hover {
-    background-color: rgba($accent-muted, 0.15);
+    background-color: rgba($accent-muted, 0.1);
     border-color: $accent-muted;
   }
 
   &:focus-visible {
-    outline: 2px solid $accent-color;
+    outline: 2px solid rgba($accent-color, 0.4);
     outline-offset: 2px;
   }
 }

@@ -1,11 +1,15 @@
 @use '../../Styles/variables' as *;
 
 /*
- * Home — Milestone 4: Full-viewport presentation hero.
+ * Home — Milestone 5: Full-viewport hero + "Parcours" discipline screens.
  * --------------------------------------------------------------------------
- * BEM block: `home-section`. Editorial, asymmetric framing that fills the
- * full viewport (`min-height: 100vh`) as the presentation banner above the
- * global split layout.
+ * BEM blocks:
+ *   - `home-section`: editorial, asymmetric framing that fills the full
+ *     viewport (`min-height: 100vh`) as the presentation banner above the
+ *     global split layout (View 1).
+ *   - `parcours-section` (+ `parcours-card` nested block): the second
+ *     full-viewport screen (`min-height: 100vh`) presenting the creative
+ *     disciplines with outbound links and QR codes (View 2).
  *
  * Session rules honored:
  *   - W3C CSS Level 3 compliant BEM; tokens sourced from
@@ -16,10 +20,26 @@
  *     (session rule 5).
  *   - Zero inline layout CSS (session rule 4); dynamic transition durations
  *     stay within the 0.2s–0.25s range via `$transition-base`.
+ *
+ * Language switch positioning contract:
+ *   - `.home-section` is `position: relative` + `pointer-events: auto` so
+ *     the absolutely positioned `.home-section__top-bar` anchors directly
+ *     inside the hero frame and stays interactive.
+ *   - `.home-section__top-bar` sits at `top: 4.75rem; right: 2rem` with
+ *     `z-index: 10` — clearly below the fixed site header bar (which
+ *     occupies roughly the top 3.5–4rem of the viewport) so the switch
+ *     lands on the open canvas directly under the header's nav links,
+ *     right-aligned; above the radial glow (`::before`) and the content
+ *     column (z-index 1).
+ *   - `.home-section__lang-switch` carries an explicit translucent accent
+ *     tint + hairline border so the pill reads against the beige surface,
+ *     and `.home-section__lang-btn` uses `$text-muted` (full opacity) so
+ *     the FR / EN labels are never rendered transparent.
  */
 
 .home-section {
   position: relative;
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -50,6 +70,80 @@
     );
     pointer-events: none;
   }
+}
+
+/*
+ * Top bar — hosts the FR | EN language switch, the single canonical
+ * switcher, strictly inside the hero at the top right. The top Header
+ * and the Navigation sidebar carry no language controls. Strict BEM,
+ * zero inline styling; active language uses the `--active` modifier.
+ *
+ * `top: 4.75rem` clears the 3.5–4rem fixed header bar completely so the
+ * switch sits on the open canvas directly beneath the header's nav links;
+ * `right: 2rem` keeps it right-aligned. `z-index: 10` keeps the switch
+ * above the radial glow and the content column (z-index 1). `pointer-events:
+ * auto` is explicit so the control is always interactive even if an
+ * ancestor ever sets `pointer-events: none`.
+ */
+.home-section__top-bar {
+  position: absolute;
+  top: 4.75rem;
+  right: 2rem;
+  z-index: 10;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: auto;
+}
+
+/*
+ * Explicit pill surface: translucent accent tint + hairline border so the
+ * switch stays legible against the beige hero surface (session rule 2:
+ * never rely on the background alone for contrast).
+ */
+.home-section__lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background-color: rgba($accent-color, 0.08);
+  border: 1px solid rgba($text-main, 0.15);
+}
+
+/*
+ * `$text-muted` at full opacity (no alpha) so the FR / EN labels are
+ * never rendered transparent against the hero surface.
+ */
+.home-section__lang-btn {
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: $text-muted;
+  opacity: 1;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  transition: color $transition-base;
+
+  &:hover {
+    color: $accent-color;
+  }
+
+  &--active {
+    color: $accent-color;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $accent-color;
+    outline-offset: 2px;
+  }
+}
+
+.home-section__lang-divider {
+  font-size: 0.75rem;
+  color: rgba($text-muted, 0.4);
 }
 
 /*
@@ -140,33 +234,159 @@
   }
 }
 
+/* ==========================================================================
+   Parcours — View 2: creative disciplines with links + QR codes
+   ========================================================================== */
+.parcours-section {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1.5rem;
+  box-sizing: border-box;
+  scroll-margin-top: 1rem;
+  background-color: $bg-primary;
+}
+
+.parcours-section__container {
+  max-width: 1020px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.parcours-section__header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.parcours-section__title {
+  font-size: 2.4rem;
+  color: $text-main;
+  margin: 0 0 0.5rem 0;
+}
+
+.parcours-section__subtitle {
+  font-size: 1.05rem;
+  color: $text-muted;
+  margin: 0;
+}
+
+.parcours-section__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 1.75rem;
+}
+
 /*
- * Bottom "scroll to explore" cue, anchored to the lower edge of the hero.
+ * `360px` is intentionally below the natural `1fr` floor so the
+ * `auto-fit` track collapses to a single fluid column on narrow
+ * viewports (W3C Level 3: a minmax minimum must be a valid `<length>`).
  */
-.home-section__signature {
-  position: absolute;
-  left: 50%;
-  bottom: 2rem;
-  transform: translateX(-50%);
+.parcours-card {
+  background-color: $bg-secondary;
+  border-radius: 14px;
+  padding: 2rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: $shadow-sm;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.5rem;
+  box-sizing: border-box;
+  transition: transform $transition-base,
+              box-shadow $transition-base;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: $shadow-md;
+  }
+}
+
+.parcours-card__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.parcours-card__badge {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: $accent-color;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.parcours-card__title {
+  font-size: 1.4rem;
+  color: $text-main;
+  margin: 0 0 0.75rem 0;
+}
+
+.parcours-card__description {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: $text-main;
+  margin: 0 0 1.25rem 0;
+}
+
+.parcours-card__link {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: $accent-color;
+  text-decoration: none;
+  transition: color $transition-base;
+
+  &:hover {
+    color: $accent-muted;
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 3px solid $accent-color;
+    outline-offset: 3px;
+  }
+}
+
+.parcours-card__qr-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  z-index: 1;
+  gap: 0.4rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-.home-section__signature-line {
-  width: 1px;
-  height: 2.5rem;
-  background: linear-gradient($text-muted 0%, rgba($text-muted, 0) 100%);
+.parcours-card__qr {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: #fff;
+  padding: 6px;
+  box-sizing: border-box;
 }
 
-.home-section__signature-text {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+.parcours-card__qr-caption {
+  font-size: 0.75rem;
   color: $text-muted;
+}
+
+/* ==========================================================================
+   Responsive: single fluid column on narrow viewports
+   ========================================================================== */
+@media (max-width: 768px) {
+  .parcours-section__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .parcours-section__title {
+    font-size: 1.9rem;
+  }
 }
 
 /* ==========================================================================
@@ -182,10 +402,6 @@
     margin-left: 0;
     align-items: flex-start;
   }
-
-  .home-section__signature {
-    bottom: 1.5rem;
-  }
 }
 
 /* ==========================================================================
@@ -197,6 +413,14 @@
   }
 
   .home-section__cta:hover {
+    transform: none;
+  }
+
+  .parcours-card {
+    transition: none;
+  }
+
+  .parcours-card:hover {
     transform: none;
   }
 }

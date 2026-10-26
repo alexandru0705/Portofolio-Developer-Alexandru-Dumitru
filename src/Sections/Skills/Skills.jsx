@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useLanguage } from '../../Context/LanguageContext';
 import { competencesData } from '../../Data/competencesData';
 import './Skills.scss';
 
@@ -9,6 +10,13 @@ import './Skills.scss';
  * `competencesData.js` (Front-End, Back-End & Databases, Tools/Workflow)
  * and defensively normalized so missing or mis-shaped entries degrade to
  * safe text fallbacks instead of breaking the layout.
+ *
+ * Bilingual display:
+ *   `category` and `description` are `{ fr, en }` objects (see
+ *   `competencesData.js`). The active locale is consumed through
+ *   `useLanguage()` and each field is resolved with a defensive fallback
+ *   chain (`[language]` → `fr` → `en`) so a missing locale entry degrades
+ *   gracefully instead of rendering `undefined`.
  *
  * Session rules honored:
  *   - `Array.isArray()` + explicit shape checks on every ingested item.
@@ -70,16 +78,27 @@ function sanitizeSkill(rawSkill, index) {
  *   - category   : non-empty string (falls back to "Category")
  *   - description: non-empty string (may be "")
  *   - skills     : array of sanitized skill objects (guaranteed array)
+ *
+ * `category` and `description` are bilingual `{ fr, en }` objects; the
+ * active locale is resolved with a defensive fallback chain
+ * (`[language]` → `fr` → `en`) so a missing locale entry degrades
+ * gracefully instead of rendering `undefined`.
  */
-function sanitizeCategory(rawCategory, index) {
+function sanitizeCategory(rawCategory, index, language) {
   if (typeof rawCategory !== 'object' || rawCategory === null) {
     return null;
   }
-  const category = (typeof rawCategory.category === 'string' && rawCategory.category.length > 0)
-    ? rawCategory.category
+  const category = (typeof rawCategory.category === 'object' && rawCategory.category !== null)
+    ? (rawCategory.category[language] || rawCategory.category.fr || rawCategory.category.en)
+    : rawCategory.category;
+  const safeCategory = (typeof category === 'string' && category.length > 0)
+    ? category
     : `Category ${index + 1}`;
-  const description = (typeof rawCategory.description === 'string' && rawCategory.description.length > 0)
-    ? rawCategory.description
+  const description = (typeof rawCategory.description === 'object' && rawCategory.description !== null)
+    ? (rawCategory.description[language] || rawCategory.description.fr || rawCategory.description.en)
+    : rawCategory.description;
+  const safeDescription = (typeof description === 'string' && description.length > 0)
+    ? description
     : '';
   const skills = Array.isArray(rawCategory.skills)
     ? rawCategory.skills
@@ -87,36 +106,44 @@ function sanitizeCategory(rawCategory, index) {
       .filter((skill) => skill !== null)
     : [];
   return {
-    category,
-    description,
+    category: safeCategory,
+    description: safeDescription,
     skills,
   };
 }
 
 function Skills() {
+  const { language, t } = useLanguage();
+  const isFr = language === 'fr';
+  const navDictionary = t('nav') || {};
+  const heading = (typeof navDictionary.skills === 'string' && navDictionary.skills.length > 0)
+    ? navDictionary.skills
+    : (isFr ? 'Compétences' : 'Skills');
+  const skillUnit = isFr ? 'compétence' : 'skill';
+  const skillUnits = isFr ? 'compétences' : 'skills';
   const categories = useMemo(() => {
     if (!Array.isArray(competencesData)) {
       return [];
     }
     return competencesData
-      .map((rawCategory, index) => sanitizeCategory(rawCategory, index))
+      .map((rawCategory, index) => sanitizeCategory(rawCategory, index, language))
       .filter((category) => category !== null);
-  }, []);
+  }, [language]);
 
   const hasContent = Array.isArray(categories) && categories.length > 0;
 
   if (!hasContent) {
     return (
       <div className="skills-section skills-section--empty">
-        <h2 className="skills-section__heading">Skills</h2>
-        <p className="skills-section__empty-message">No skills available.</p>
+        <h2 className="skills-section__heading">{heading}</h2>
+        <p className="skills-section__empty-message">{isFr ? 'Aucune compétence disponible.' : 'No skills available.'}</p>
       </div>
     );
   }
 
   return (
     <div className="skills-section">
-      <h2 className="skills-section__heading">Skills</h2>
+      <h2 className="skills-section__heading">{heading}</h2>
 
       <ul className="skills-section__grid">
         {categories.map((entry) => (
@@ -132,7 +159,7 @@ function Skills() {
                 <div className="skills-section__card-heading-text">
                   <h3 className="skills-section__card-title">{entry.category}</h3>
                   <span className="skills-section__card-count">
-                    {entry.skills.length} {entry.skills.length === 1 ? 'skill' : 'skills'}
+                    {entry.skills.length} {entry.skills.length === 1 ? skillUnit : skillUnits}
                   </span>
                 </div>
               </header>
@@ -159,7 +186,7 @@ function Skills() {
                   ))}
                 </ul>
               ) : (
-                <p className="skills-section__skill-empty">No skills listed.</p>
+                <p className="skills-section__skill-empty">{isFr ? 'Aucune compétence listée.' : 'No skills listed.'}</p>
               )}
             </article>
           </li>

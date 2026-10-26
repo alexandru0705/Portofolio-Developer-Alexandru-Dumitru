@@ -1,50 +1,138 @@
-@use '../../styles/variables' as *;
+@use '../../Styles/variables' as *;
 
-site-header {
+/* ==========================================================================
+   Header — floating glassmorphic top navigation bar
+   BEM block: .site-header
+   --------------------------------------------------------------------------
+   Fixed across the top of the viewport above the `#banner` hero. When the
+   split layout (`.app__split`) enters the viewport, the sidebar
+   <Navigation /> takes over and this bar transitions out (modifier
+   `site-header--hidden`); scrolling back up restores it
+   (`site-header--visible`).
+   --------------------------------------------------------------------------
+   Layout contract (Milestone 9 refactor):
+   - Left: brand. Right: nav links only. The FR | EN language toggle lives
+     exclusively in the sidebar <Navigation /> (`.navigation__lang-wrapper`);
+     this header carries no language controls.
+   ========================================================================== */
+
+.site-header {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: 70px;
-  background-color: $bg-primary;
-  backdrop-filter: blur(8px);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 2rem;
-  border-bottom: 1px solid #334155;
-  z-index: 1000;
+  z-index: 100;
+  background-color: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity $transition-base, transform $transition-base;
+  pointer-events: auto;
 
-  .header-brand {
-    font-size: 1.1rem;
-    font-weight: 600;
+  /* Hidden state — split layout / sidebar navigation is on screen */
+  &--hidden {
+    opacity: 0;
+    transform: translateY(-100%);
+    pointer-events: none;
+  }
+
+  /* Visible state — hero `#banner` is on screen */
+  &--visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  /* Inner container aligned with page content */
+  &__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    box-sizing: border-box;
+  }
+
+  /* Brand block — left-aligned, links smoothly to #banner */
+  &__brand {
+    display: inline-block;
     color: $text-main;
-    cursor: pointer;
-    letter-spacing: 0.5px;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    transition: color $transition-base;
 
     &:hover {
       color: $accent-color;
     }
+
+    &:focus-visible {
+      outline: 2px solid $accent-color;
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
   }
 
-  .header-nav {
+  /* Navigation — right-aligned list of links */
+  &__nav {
     display: flex;
-    gap: 1.5rem;
+    align-items: center;
+    gap: 1.75rem;
+  }
 
-    button {
-      background: none;
-      border: none;
-      color: $text-muted;
-      font-size: 0.95rem;
-      font-weight: 500;
-      cursor: pointer;
-      font-family: inherit;
-      transition: color 0.2s ease;
+  /* Nav link buttons — clean typography, no native borders */
+  &__link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: $text-main;
+    cursor: pointer;
+    transition: color $transition-base;
 
-      &:hover {
-        color: $accent-color;
-      }
+    &:hover {
+      color: $accent-color;
     }
+
+    &:focus-visible {
+      outline: 2px solid $accent-color;
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+  }
+
+  /* ==========================================================================
+     Responsive — compact padding on mobile (<= 768px)
+     ========================================================================== */
+  @media (max-width: 768px) {
+    &__inner {
+      padding: 0.75rem 1rem;
+    }
+
+    &__brand {
+      font-size: 0.9rem;
+    }
+
+    &__nav {
+      gap: 1rem;
+    }
+
+    &__link {
+      font-size: 0.85rem;
+    }
+  }
+
+  /* ==========================================================================
+     Accessibility — respect reduced motion preferences
+     ========================================================================== */
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 }

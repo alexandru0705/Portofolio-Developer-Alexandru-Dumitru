@@ -1,3 +1,4 @@
+import { LanguageProvider } from './Context/LanguageContext';
 import Header from './Components/Header/Header';
 import Navigation from './Components/Navigation/Navigation';
 import Home from './Sections/Home/Home';
@@ -8,7 +9,11 @@ import Footer from './Components/Footer/Footer';
 import './App.scss';
 
 /*
- * Milestone 2 — Global page layout shell.
+ * Milestone 2 — Global page layout shell (Milestone 9: bilingual).
+ *
+ * The ENTIRE application hierarchy is wrapped in `<LanguageProvider>`
+ * (see `src/Context/LanguageContext.jsx`) so every component can consume
+ * the FR/EN locale via the `useLanguage()` hook with zero props drilling.
  *
  * The hero presentation section (`#banner`) spans the full viewport height
  * and sits above a two-pane split:
@@ -23,30 +28,32 @@ import './App.scss';
  */
 function App() {
   return (
-    <div className="app">
-      <Header />
+    <LanguageProvider>
+      <div className="app">
+        <Header />
 
-      <section id="banner" className="app__banner">
-        <Home />
-      </section>
+        <section id="banner" className="app__banner">
+          <Home />
+        </section>
 
-      <div className="app__split">
-        <Navigation />
+        <div className="app__split">
+          <Navigation />
 
-        <main className="app__content">
-          <section id="skills" className="app__section">
-            <Skills />
-          </section>
-          <section id="projects" className="app__section">
-            <Projects />
-          </section>
-          <section id="contact" className="app__section">
-            <Contact />
-          </section>
-          <Footer />
-        </main>
+          <main className="app__content">
+            <section id="skills" className="app__section">
+              <Skills />
+            </section>
+            <section id="projects" className="app__section">
+              <Projects />
+            </section>
+            <section id="contact" className="app__section">
+              <Contact />
+            </section>
+            <Footer />
+          </main>
+        </div>
       </div>
-    </div>
+    </LanguageProvider>
   );
 }
 

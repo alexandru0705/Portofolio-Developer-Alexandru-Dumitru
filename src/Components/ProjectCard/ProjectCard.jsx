@@ -1,10 +1,12 @@
+import { useLanguage } from '../../Context/LanguageContext';
 import './ProjectCard.scss';
 
 /*
  * ProjectCard — Milestone 3 (Milestone 7 fix: bounded thumbnail).
  * --------------------------------------------------------------------------
  * A single card in the responsive Projects grid. Clicking the card (or
- * the "Détails" button) opens the full `ProjectModal` via `onInspect`.
+ * the "Détails" button) opens the full `ProjectModal` via
+ * `onSelectProject`.
  *
  * Card contents:
  *   - project thumbnail image — bounded by a dedicated `__media` container
@@ -18,6 +20,13 @@ import './ProjectCard.scss';
  *   - tag pills
  *   - action triggers: "Détails / Inspect" button + "GitHub" external link
  *
+ * Bilingual display:
+ *   `project.description` is a `{ fr, en }` object (see
+ *   `projectsData.js`). The active locale is consumed through
+ *   `useLanguage()` and the description is resolved with a defensive
+ *   fallback chain (`[language]` → `fr` → `en` → `''`) so a missing
+ *   locale entry degrades gracefully instead of rendering `undefined`.
+ *
  * Asset handling (session rule 3):
  *   The image `src` is resolved through `import.meta.env.BASE_URL` upstream
  *   (see `resolveProjectImage` in `Projects.jsx`). A native `onError`
@@ -29,18 +38,22 @@ import './ProjectCard.scss';
  *   `event.stopPropagation()` so they don't also trigger the card / modal.
  *
  * Props:
- *   project   : sanitized project object (see `sanitizeProject` in
- *               `Projects.jsx`)
- *   onInspect : (project: object) => void — opens the modal
- *   imageSrc  : resolved preview image URL (string | undefined)
- *   onError   : (event) => void — native img error handler
+ *   project           : sanitized project object (see `sanitizeProject` in
+ *                       `Projects.jsx`)
+ *   onSelectProject   : (project: object) => void — opens the modal
+ *   imageSrc          : resolved preview image URL (string | undefined)
+ *   onError           : (event) => void — native img error handler
+ *   detailsLabel      : (optional) string — localized "details" button copy
  */
 function ProjectCard({
   project,
-  onInspect,
+  onSelectProject,
   imageSrc,
   onError,
+  detailsLabel,
 }) {
+  const { language } = useLanguage();
+
   if (typeof project !== 'object' || project === null) {
     return null;
   }
@@ -53,9 +66,9 @@ function ProjectCard({
     ? project.category
     : 'Project';
 
-  const description = (typeof project.description === 'string' && project.description.length > 0)
-    ? project.description
-    : '';
+  const description = (typeof project.description === 'object' && project.description !== null)
+    ? (project.description[language] || project.description.fr || project.description.en || '')
+    : (typeof project.description === 'string' ? project.description : '');
 
   const tags = Array.isArray(project.tags)
     ? project.tags.filter((tag) => typeof tag === 'string' && tag.length > 0)
@@ -67,9 +80,13 @@ function ProjectCard({
 
   const hasImage = typeof imageSrc === 'string' && imageSrc.length > 0;
 
+  const inspectLabel = (typeof detailsLabel === 'string' && detailsLabel.length > 0)
+    ? detailsLabel
+    : 'Details';
+
   function handleInspect() {
-    if (typeof onInspect === 'function') {
-      onInspect(project);
+    if (typeof onSelectProject === 'function') {
+      onSelectProject(project);
     }
   }
 
@@ -155,7 +172,7 @@ function ProjectCard({
             }}
             aria-label={`Inspect ${title} details`}
           >
-            Détails
+            {inspectLabel}
           </button>
 
           {githubUrl && (

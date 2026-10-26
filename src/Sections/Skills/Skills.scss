@@ -20,6 +20,7 @@
 .skills-section {
   position: relative;
   padding: 2rem 0;
+  scroll-margin-top: 1rem;
 
   &__heading {
     font-size: 2.5rem;
@@ -53,7 +54,7 @@
     width: 100%;
     box-sizing: border-box;
     padding: 1.5rem;
-    background-color: $bg-secondary;
+    background-color: rgba($bg-secondary, 0.6);
     border: 1px solid rgba($text-main, 0.08);
     border-radius: 0.75rem;
     box-shadow: $shadow-sm;

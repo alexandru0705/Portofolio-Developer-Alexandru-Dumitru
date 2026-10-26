@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useLanguage } from '../../Context/LanguageContext';
 import './ProjectModal.scss';
 
 /*
@@ -14,6 +15,14 @@ import './ProjectModal.scss';
  *   - `Escape` key closes the dialog.
  *   - On close, focus is restored to the previously focused element.
  *
+ * Bilingual display:
+ *   `project.modalDetails` is a `{ fr, en }` object (see
+ *   `projectsData.js`) whose entries carry `context`, `architecture`
+ *   (string array) and `deliverables`. The active locale is consumed
+ *   through `useLanguage()` and resolved with a defensive fallback chain
+ *   (`[language]` → `fr` → `en` → `null`). Section headings come from the
+ *   `projects.modal*` translation keys.
+ *
  * Defensive posture (session rule 2):
  *   - Every browser API is guarded with `typeof window !== 'undefined'`.
  *   - The previously-focused element is captured in a ref and restored on
@@ -21,6 +30,7 @@ import './ProjectModal.scss';
  *   - The carousel image has a native `onError` fallback modifier.
  */
 function ProjectModal({ project, onClose }) {
+  const { language, t } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
   const panelRef = useRef(null);
   const closeRef = useRef(null);
@@ -65,6 +75,36 @@ function ProjectModal({ project, onClose }) {
     : ((typeof project.liveUrl === 'string' && project.liveUrl.length > 0)
       ? project.liveUrl
       : undefined);
+
+  /*
+   * Bilingual deep-dive details: `project.modalDetails` is a `{ fr, en }`
+   * object. Resolve the active locale with a defensive fallback chain so a
+   * missing locale entry degrades to the other locale instead of `null`.
+   */
+  const details = (typeof project !== 'object' || project === null)
+    ? null
+    : ((typeof project.modalDetails === 'object' && project.modalDetails !== null)
+      ? (project.modalDetails[language] || project.modalDetails.fr || project.modalDetails.en || null)
+      : null);
+
+  const detailsContext = (details && typeof details.context === 'string' && details.context.length > 0)
+    ? details.context
+    : '';
+  const detailsArchitecture = (details && Array.isArray(details.architecture))
+    ? details.architecture.filter((item) => typeof item === 'string' && item.length > 0)
+    : [];
+  const detailsDeliverables = (details && typeof details.deliverables === 'string' && details.deliverables.length > 0)
+    ? details.deliverables
+    : '';
+
+  const hasDetails = detailsContext.length > 0
+    || detailsArchitecture.length > 0
+    || detailsDeliverables.length > 0;
+
+  const modalContextLabel = t('projects.modalContext') || 'Context & Objectives';
+  const modalArchitectureLabel = t('projects.modalArchitecture') || 'Architecture & Key Highlights';
+  const modalDeliverablesLabel = t('projects.modalDeliverables') || 'Deliverables & Business Value';
+  const modalCloseLabel = t('projects.modalClose') || 'Close modal';
 
   const hasImages = images.length > 0;
   const canNavigate = images.length > 1;
@@ -226,7 +266,7 @@ function ProjectModal({ project, onClose }) {
           type="button"
           className="project-modal__close"
           onClick={handleOverlayClick}
-          aria-label="Close dialog"
+          aria-label={modalCloseLabel}
         >
           ×
         </button>
@@ -279,6 +319,35 @@ function ProjectModal({ project, onClose }) {
 
         {description.length > 0 && (
           <p className="project-modal__description">{description}</p>
+        )}
+
+        {hasDetails && (
+          <div className="project-modal__details">
+            {detailsContext.length > 0 && (
+              <section className="project-modal__details-section">
+                <h3 className="project-modal__details-heading">{modalContextLabel}</h3>
+                <p className="project-modal__details-text">{detailsContext}</p>
+              </section>
+            )}
+
+            {detailsArchitecture.length > 0 && (
+              <section className="project-modal__details-section">
+                <h3 className="project-modal__details-heading">{modalArchitectureLabel}</h3>
+                <ul className="project-modal__details-list">
+                  {detailsArchitecture.map((item) => (
+                    <li key={item} className="project-modal__details-item">{item}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {detailsDeliverables.length > 0 && (
+              <section className="project-modal__details-section">
+                <h3 className="project-modal__details-heading">{modalDeliverablesLabel}</h3>
+                <p className="project-modal__details-text">{detailsDeliverables}</p>
+              </section>
+            )}
+          </div>
         )}
 
         {(githubUrl || liveUrl) && (

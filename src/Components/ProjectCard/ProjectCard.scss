@@ -9,9 +9,19 @@
  * action triggers ("Détails" + "GitHub").
  *
  * Milestone 7 thumbnail fix:
+ *   - `.project-card` is the SOLE element defining the card box:
+ *     `background-color`, `border-radius: 20px`,
+ *     `box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06)`, and
+ *     `overflow: clip` (inner elements strictly clipped to the 20px
+ *     rounded boundary). No ancestor in the carousel (viewport/slide)
+ *     carries a shadow, background, or rectangular clip — so the card's
+ *     rounded shadow renders freely with no 90° corner artifact.
  *   - `__media` is a dedicated bounded container: `aspect-ratio: 16 / 10`,
- *     `height: 200px` fallback for older browsers, `overflow: hidden`,
- *     `width: 100%`, `border-radius: 8px`.
+ *     `height: 200px` fallback for older browsers, `overflow: clip`,
+ *     `width: 100%`, `border-radius: 20px 20px 0 0` (matching the card's
+ *     top curvature), with NO shadow of its own — the single card-level
+ *     `box-shadow` on `.project-card` is the only shadow in the card
+ *     (no double-shadow artifact).
  *   - `__image` is strictly constrained: `width: 100%; height: 100%;
  *     object-fit: cover; display: block;` with a smooth hover zoom
  *     (`transform: scale(1.03)`).
@@ -20,8 +30,8 @@
  *
  * Session rules honored:
  *   - W3C CSS Level 3 compliant BEM; zero inline layout CSS.
- *   - `overflow: clip` on the card body; `overflow: hidden` ONLY on the
- *     media container (required for the zoom to be visually clipped).
+ *   - `overflow: clip` everywhere (card body + media container) so no
+ *     scroll context is ever protected by `overflow: hidden`.
  *   - No bare `line-clamp` — only the standard vendor-prefixed combination.
  */
 
@@ -29,10 +39,10 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  background-color: $bg-primary;
+  background-color: $bg-primary; // Card surface ($bg-card equivalent)
   border: 2px solid transparent;
-  border-radius: 0.625rem;
-  box-shadow: $shadow-sm;
+  border-radius: 20px; // Rounded card corners so the shadow curves naturally
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06); // Subtle, soft rounded shadow
   cursor: pointer;
   overflow: clip;
   transition: border-color $transition-base,
@@ -40,7 +50,7 @@
               transform $transition-base;
 
   &:hover {
-    box-shadow: $shadow-md;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.07); // Slightly deeper, still soft & rounded
     transform: translateY(-2px);
   }
 
@@ -50,22 +60,29 @@
   }
 
   /* ==========================================================================
-     Media / thumbnail container (Milestone 7 fix)
+     Media / thumbnail container (Milestone 7 fix + shadow-hierarchy fix)
      --------------------------------------------------------------------------
      Bounded aspect-ratio container with a fixed height fallback so raw
-     screenshots never render at natural resolution. `overflow: hidden`
-     here is required to clip the hover zoom (`scale(1.03)`) within the
-     card's visual bounds — this is the ONLY place `overflow: hidden` is
-     used (session rule 5: never on the card/scroll containers, but
-     acceptable on a leaf media wrapper for zoom clipping).
+     screenshots never render at natural resolution.
+
+     Shadow hierarchy: this wrapper carries NO shadow of its own (no
+     `box-shadow`, no `filter: drop-shadow`) — the single card-level
+     shadow on `.project-card` is the only shadow in the card. It only
+     defines the clean rounded boundary for the preview image:
+       - `border-radius: 20px 20px 0 0` (top corners match the card's
+         top curvature, bottom corners square — the thumbnail sits flush
+         with the card body)
+       - `overflow: clip`      (image conforms to the curved boundary;
+                                 `clip` — not `hidden` — creates no scroll
+                                 context)
      ========================================================================== */
   &__media {
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 10;
     height: 200px;
-    overflow: hidden;
-    border-radius: 8px;
+    overflow: clip;
+    border-radius: 20px 20px 0 0; // Top curvature matches the card; bottom corners square
     background-color: rgba($text-main, 0.04);
     flex-shrink: 0;
   }
@@ -73,7 +90,10 @@
   /*
    * Thumbnail image — strictly constrained to fill the media container
    * without distorting. `object-fit: cover` crops to fill; `display:
-   * block` removes the inline baseline gap.
+   * block` removes the inline baseline gap; `border-radius: inherit`
+   * lets the image adopt the wrapper's `20px 20px 0 0` radius so only
+   * the top corners are rounded inside the clipped boundary. No shadow
+   * on the image.
    */
   &__image {
     display: block;
@@ -81,6 +101,7 @@
     height: 100%;
     object-fit: cover;
     object-position: center;
+    border-radius: inherit;
     transition: transform $transition-base;
 
     .project-card:hover & {

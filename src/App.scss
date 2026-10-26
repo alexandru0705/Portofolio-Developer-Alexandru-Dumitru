@@ -20,7 +20,7 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: $bg-primary;
+  background-color: rgba($bg-primary, 0.9);
   color: $text-main;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -39,7 +39,6 @@ body {
   min-height: 100vh;
   width: 100%;
   box-sizing: border-box;
-  scroll-margin-top: $header-pinned-height;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -47,12 +46,19 @@ body {
 
 /* ==========================================================================
    Global Split Layout (below Hero)
+   --------------------------------------------------------------------------
+   Standard flex split: no negative-margin compensation. Scroll anchoring
+   for the in-split sections is handled natively via `scroll-margin-top`
+   on the section containers (see `Skills.scss`, `Projects.scss`,
+   `Contact.scss`), so document offset calculations stay trivially correct.
    ========================================================================== */
 .app__split {
   display: flex;
   flex-direction: row;
   align-items: stretch;
   flex: 1;
+  width: 100%;
+  position: relative;
   gap: $layout-gap;
 }
 
@@ -70,7 +76,7 @@ body {
   box-sizing: border-box;
   padding: $sidebar-gutter;
   overflow: clip;
-  background-color: $bg-secondary;
+  background-color: rgba($bg-secondary, 0.2);
   box-shadow: $shadow-sm;
 }
 
@@ -148,8 +154,13 @@ body {
   gap: $layout-gap;
 }
 
+/*
+ * Section scroll anchors. The in-split sections are offset natively via
+ * `scroll-margin-top` (1rem) on `.skills-section`, `.projects-section` and
+ * `.contact-section` — no custom coordinate arithmetic in JS.
+ */
 .app__section {
-  scroll-margin-top: $header-pinned-height;
+  scroll-margin-top: 1rem;
 }
 
 /* ==========================================================================
