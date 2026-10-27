@@ -155,12 +155,16 @@ body {
 }
 
 /*
- * Section scroll anchors. The in-split sections are offset natively via
- * `scroll-margin-top` (1rem) on `.skills-section`, `.projects-section` and
- * `.contact-section` — no custom coordinate arithmetic in JS.
+ * Section scroll anchors.
+ * On desktop (>=769px), 1rem clears the split layout.
+ * On mobile (<=768px), 4rem clears the fixed top header.
  */
 .app__section {
-  scroll-margin-top: 1rem;
+  scroll-margin-top: 3rem;
+
+  @media (min-width: 769px) {
+    scroll-margin-top: 1rem;
+  }
 }
 
 /* ==========================================================================
