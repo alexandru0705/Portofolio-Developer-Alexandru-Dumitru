@@ -111,6 +111,17 @@
 }
 
 /*
+ * Suppress hero language switcher on mobile (<= 768px).
+ * The canonical mobile switch is now housed inside the Header drawer.
+ */
+@media (max-width: 768px) {
+  .home-section__top-bar,
+  .home-section__lang-switch {
+    display: none;
+  }
+}
+
+/*
  * `$text-muted` at full opacity (no alpha) so the FR / EN labels are
  * never rendered transparent against the hero surface.
  */
