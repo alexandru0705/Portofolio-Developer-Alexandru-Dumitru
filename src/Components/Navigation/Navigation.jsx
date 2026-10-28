@@ -55,10 +55,15 @@ import './Navigation.scss';
  *
  * Bilingual contract (Milestone 9 refactor):
  *   - `useLanguage()` is consumed for localized copy only (brand role,
- *     nav labels, "Say hello"). The FR | EN language toggle is the single
+ *     nav labels, "Say hello", CV button). The FR | EN language toggle is the single
  *     canonical switcher and lives EXCLUSIVELY in the Home hero
  *     (`Home.jsx`, `.home-section__lang-switch`) — this sidebar carries no
  *     language controls, and neither does the top Header.
+ *
+ * Document Assets & GitHub Pages Subpath:
+ *   - Static files located in `/public/documents/` are resolved defensively
+ *     using Vite's `import.meta.env.BASE_URL` so production hosting under
+ *     `/<repo-name>/` never encounters 404 missing resource errors.
  */
 const NAV_ITEMS = [
   { id: 'banner', labelKey: 'home' },
@@ -112,6 +117,20 @@ function getActiveSection(sectionIds) {
 
 function isBrowserEnvironment() {
   return typeof window !== 'undefined' && typeof document !== 'undefined';
+}
+
+/*
+ * Defensive base URL resolver for static assets in the public folder.
+ * Ensures that repository subpaths on GitHub Pages (e.g. /<repo>/) are
+ * always preserved with exactly one separating slash.
+ */
+function getPublicAssetUrl(relativePath) {
+  const base = (typeof import.meta !== 'undefined' && import.meta.env && typeof import.meta.env.BASE_URL === 'string')
+    ? import.meta.env.BASE_URL
+    : '/';
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
+  const cleanPath = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
+  return `${cleanBase}${cleanPath}`;
 }
 
 /*
@@ -170,7 +189,7 @@ function sanitizeSocialLinks(links) {
 }
 
 function Navigation() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [activeSection, setActiveSection] = useState('banner');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const activeSectionRef = useRef('banner');
@@ -183,6 +202,9 @@ function Navigation() {
 
   const navItems = useState(() => sanitizeNavItems(NAV_ITEMS))[0];
   const socialLinks = useState(() => sanitizeSocialLinks(SOCIAL_LINKS))[0];
+
+  const cvPdfUrl = getPublicAssetUrl('documents/AlexD_CV.pdf');
+  const isFr = language === 'fr';
 
   /*
    * Keeps a ref in sync with the active section so the passive scroll
@@ -454,6 +476,8 @@ function Navigation() {
     ? navDictionary.sayHello
     : 'Say hello →';
 
+  const cvLabel = isFr ? 'Mon CV (PDF)' : 'Download CV (PDF)';
+
   return (
     <aside className={asideClass} aria-label="Site navigation">
       <button
@@ -521,6 +545,20 @@ function Navigation() {
                 </a>
               ))}
             </div>
+
+            <a
+              className="navigation__cv-link"
+              href={cvPdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              download="Alexandru_Dumitru_CV.pdf"
+              aria-label={cvLabel}
+            >
+              <span className="navigation__cv-icon" aria-hidden="true">CV</span>
+              <span className="navigation__cv-label">{cvLabel}</span>
+              <span className="navigation__cv-arrow" aria-hidden="true">↗</span>
+            </a>
+
             <a
               className="navigation__contact"
               href="mailto:alexandru0705@gmail.com"
