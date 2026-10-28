@@ -1,4 +1,5 @@
-@use '../../Styles/Variables' as *;
+@use 'sass:color';
+@use '../../Styles/Variables.scss' as *;
 
 /*
  * ProjectModal — full project details dialog with screenshot gallery.
