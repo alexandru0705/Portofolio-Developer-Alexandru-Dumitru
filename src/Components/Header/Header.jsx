@@ -27,8 +27,10 @@ import './Header.scss';
      - Body scroll locking is defensively toggled via `document.body.style.overflow`
        with guaranteed restoration in `useEffect` unmount cleanup routines.
 
-   Bilingual State & Social Links Integration:
+   Bilingual State, CV Download & Social Links Integration:
      - Integrates language dispatch (`fr` / `en`) driven by `LanguageContext`.
+     - Static assets like `AlexD_CV.pdf` are safely resolved through Vite's
+       `import.meta.env.BASE_URL` to guarantee zero 404 errors on GitHub Pages.
      - Houses external social destination targets (`GitHub`) configured with
        strict `rel="noopener noreferrer"` defensive standards.
      - Houses direct contact action link (`mailto:`) for prompt messaging.
@@ -53,6 +55,28 @@ import './Header.scss';
  */
 function isBrowserEnvironment() {
   return typeof window !== 'undefined' && typeof document !== 'undefined';
+}
+
+/**
+ * Defensive base URL resolver for static assets in the public folder.
+ * Ensures that repository subpaths on GitHub Pages (e.g. /<repo>/) are
+ * always preserved with exactly one separating slash.
+ *
+ * @param {string} relativePath - Path relative to the public root.
+ * @returns {string} Sanitized, fully qualified URL path.
+ */
+function getPublicAssetUrl(relativePath) {
+  const base =
+    typeof import.meta !== 'undefined' &&
+    import.meta.env &&
+    typeof import.meta.env.BASE_URL === 'string'
+      ? import.meta.env.BASE_URL
+      : '/';
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
+  const cleanPath = relativePath.startsWith('/')
+    ? relativePath.slice(1)
+    : relativePath;
+  return `${cleanBase}${cleanPath}`;
 }
 
 /**
@@ -123,9 +147,9 @@ const RAW_SOCIAL_LINKS = Object.freeze([
  * Direct contact mailto configuration.
  */
 const MAILTO_CONFIG = Object.freeze({
-  href: 'mailto:contact@alexandrudumitru.dev',
-  labelKey: 'contactMe',
-  fallbackLabel: 'Me contacter',
+  href: 'mailto:alexandru0705@gmail.com',
+  labelKey: 'sayHello',
+  fallbackLabel: 'Say hello →',
 });
 
 /**
@@ -172,6 +196,10 @@ function Header() {
     typeof t === 'function' && t('nav') && typeof t('nav') === 'object'
       ? t('nav')
       : {};
+
+  const cvPdfUrl = getPublicAssetUrl('documents/AlexD_CV.pdf');
+  const isFr = language === 'fr';
+  const cvLabel = isFr ? 'Mon CV (PDF)' : 'Download CV (PDF)';
 
   const handleToggleClose = useCallback(() => {
     setDrawerOpen(false);
@@ -405,6 +433,23 @@ function Header() {
                     </a>
                   ))}
                 </div>
+
+                <a
+                  className="site-header__drawer-cv-link"
+                  href={cvPdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download="Alexandru_Dumitru_CV.pdf"
+                  aria-label={cvLabel}
+                >
+                  <span className="site-header__drawer-cv-icon" aria-hidden="true">
+                    CV
+                  </span>
+                  <span className="site-header__drawer-cv-label">{cvLabel}</span>
+                  <span className="site-header__drawer-cv-arrow" aria-hidden="true">
+                    ↗
+                  </span>
+                </a>
 
                 <a
                   href={MAILTO_CONFIG.href}
