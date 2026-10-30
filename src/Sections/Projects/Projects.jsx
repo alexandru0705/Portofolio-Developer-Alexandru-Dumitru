@@ -105,7 +105,7 @@ function sanitizeProject(rawProject, index) {
 
   const description = (typeof rawProject.description === 'string' && rawProject.description.length > 0)
     ? rawProject.description
-    : '';
+    : 'Description à venir pour ce projet.'; //Fallback txt
 
   const images = Array.isArray(rawProject.images)
     ? rawProject.images
