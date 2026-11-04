@@ -13,29 +13,10 @@
  *     disciplines with outbound links and QR codes (View 2).
  *
  * Session rules honored:
- *   - W3C CSS Level 3 compliant BEM; tokens sourced from
- *     `Styles/variables.scss`.
- *   - Zero bare `line-clamp` — only the standard vendor-prefixed
- *     combination (session rule 4).
- *   - No `overflow: hidden` — bounded containment uses `overflow: clip`
- *     (session rule 5).
- *   - Zero inline layout CSS (session rule 4); dynamic transition durations
- *     stay within the 0.2s–0.25s range via `$transition-base`.
- *
- * Language switch positioning contract:
- *   - `.home-section` is `position: relative` + `pointer-events: auto` so
- *     the absolutely positioned `.home-section__top-bar` anchors directly
- *     inside the hero frame and stays interactive.
- *   - `.home-section__top-bar` sits at `top: 4.75rem; right: 2rem` with
- *     `z-index: 10` — clearly below the fixed site header bar (which
- *     occupies roughly the top 3.5–4rem of the viewport) so the switch
- *     lands on the open canvas directly under the header's nav links,
- *     right-aligned; above the radial glow (`::before`) and the content
- *     column (z-index 1).
- *   - `.home-section__lang-switch` carries an explicit translucent accent
- *     tint + hairline border so the pill reads against the beige surface,
- *     and `.home-section__lang-btn` uses `$text-muted` (full opacity) so
- *     the FR / EN labels are never rendered transparent.
+ *   - W3C CSS Level 3 compliant BEM; tokens sourced from `Styles/variables.scss`.
+ *   - Zero bare `line-clamp` — only standard vendor-prefixed combination.
+ *   - No `overflow: hidden` — bounded containment uses `overflow: clip`.
+ *   - Zero inline layout CSS; dynamic transition durations stay within 0.2s–0.25s.
  */
 
 .home-section {
@@ -52,11 +33,6 @@
   background-color: $bg-primary;
   color: $text-main;
 
-  /*
-   * Subtle radial accent glow in the top-right to give the editorial
-   * surface depth without any image asset (keeps the hero asset-free and
-   * fully token-driven).
-   */
   &::before {
     content: "";
     position: absolute;
@@ -73,19 +49,6 @@
   }
 }
 
-/*
- * Top bar — hosts the FR | EN language switch, the single canonical
- * switcher, strictly inside the hero at the top right. The top Header
- * and the Navigation sidebar carry no language controls. Strict BEM,
- * zero inline styling; active language uses the `--active` modifier.
- *
- * `top: 4.75rem` clears the 3.5–4rem fixed header bar completely so the
- * switch sits on the open canvas directly beneath the header's nav links;
- * `right: 2rem` keeps it right-aligned. `z-index: 10` keeps the switch
- * above the radial glow and the content column (z-index 1). `pointer-events:
- * auto` is explicit so the control is always interactive even if an
- * ancestor ever sets `pointer-events: none`.
- */
 .home-section__top-bar {
   position: absolute;
   top: 4.75rem;
@@ -96,11 +59,6 @@
   pointer-events: auto;
 }
 
-/*
- * Explicit pill surface: translucent accent tint + hairline border so the
- * switch stays legible against the beige hero surface (session rule 2:
- * never rely on the background alone for contrast).
- */
 .home-section__lang-switch {
   display: inline-flex;
   align-items: center;
@@ -111,10 +69,6 @@
   border: 1px solid rgba($text-main, 0.15);
 }
 
-/*
- * Suppress hero language switcher on mobile (<= 768px).
- * The canonical mobile switch is now housed inside the Header drawer.
- */
 @media (max-width: 768px) {
   .home-section__top-bar,
   .home-section__lang-switch {
@@ -122,10 +76,6 @@
   }
 }
 
-/*
- * `$text-muted` at full opacity (no alpha) so the FR / EN labels are
- * never rendered transparent against the hero surface.
- */
 .home-section__lang-btn {
   background: transparent;
   border: none;
@@ -158,17 +108,13 @@
   color: rgba($text-muted, 0.4);
 }
 
-/*
- * Asymmetric editorial column: left-aligned content constrained to a
- * comfortable measure, offset from the left edge.
- */
 .home-section__content {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  max-width: 46rem;
+  max-width: 48rem;
   margin-left: clamp(0rem, 6vw, 6rem);
 }
 
@@ -203,14 +149,31 @@
   color: $accent-color;
 }
 
-.home-section__subtitle {
+/*
+ * Narrative bio paragraph matching the editorial design
+ */
+.home-section__bio {
   margin: 0 0 2rem 0;
-  max-width: 40rem;
-  font-size: clamp(1rem, 1.4vw, 1.15rem);
-  line-height: 1.7;
+  max-width: 44rem;
+  font-size: clamp(1rem, 1.35vw, 1.125rem);
+  line-height: 1.75;
   color: $text-muted;
 }
 
+/*
+ * Actions group: Desktop row layout by default
+ */
+.home-section__actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/*
+ * Base button styling
+ */
 .home-section__cta {
   display: inline-flex;
   align-items: center;
@@ -220,18 +183,18 @@
   font: inherit;
   font-size: 1rem;
   font-weight: 700;
-  color: $bg-primary;
-  background-color: $accent-color;
-  border: none;
+  text-decoration: none;
+  box-sizing: border-box;
   border-radius: 999px;
   box-shadow: $shadow-sm;
   cursor: pointer;
   transition: transform $transition-base,
               box-shadow $transition-base,
-              background-color $transition-base;
+              background-color $transition-base,
+              border-color $transition-base,
+              color $transition-base;
 
   &:hover {
-    background-color: $accent-muted;
     transform: translateY(-2px);
     box-shadow: $shadow-md;
   }
@@ -243,6 +206,29 @@
   &:focus-visible {
     outline: 3px solid $accent-color;
     outline-offset: 3px;
+  }
+
+  /* Primary variant: Solid accent background */
+  &--primary {
+    color: $bg-primary;
+    background-color: $accent-color;
+    border: 1.5px solid transparent;
+
+    &:hover {
+      background-color: $accent-muted;
+    }
+  }
+
+  /* Secondary variant: Outlined with subtle hover tint */
+  &--secondary {
+    color: $text-main;
+    background-color: transparent;
+    border: 1.5px solid $accent-color;
+
+    &:hover {
+      background-color: rgba($accent-color, 0.08);
+      color: $accent-color;
+    }
   }
 }
 
@@ -290,11 +276,6 @@
   gap: 1.75rem;
 }
 
-/*
- * `360px` is intentionally below the natural `1fr` floor so the
- * `auto-fit` track collapses to a single fluid column on narrow
- * viewports (W3C Level 3: a minmax minimum must be a valid `<length>`).
- */
 .parcours-card {
   background-color: $bg-secondary;
   border-radius: 14px;
@@ -402,7 +383,7 @@
 }
 
 /* ==========================================================================
-   Responsive: tighten the editorial column on narrow viewports
+   Responsive: Mobile stack for hero actions & content tightening
    ========================================================================== */
 @media (max-width: 600px) {
   .home-section {
@@ -413,6 +394,20 @@
   .home-section__content {
     margin-left: 0;
     align-items: flex-start;
+    width: 100%;
+  }
+
+  /* Switches from row to stacked column on mobile */
+  .home-section__actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  .home-section__cta {
+    width: 100%;
+    text-align: center;
   }
 }
 

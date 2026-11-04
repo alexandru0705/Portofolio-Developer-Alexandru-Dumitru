@@ -4,8 +4,8 @@
  * --------------------------------------------------------------------------
  * Two consecutive full-viewport screens (`min-height: 100vh` each):
  *   1. View 1 — the editorial presentation hero (`#banner` context):
- *      role eyebrow, main `<h1>` name/title, introductory paragraph, and a
- *      call-to-action that smooth-scrolls down to the Projects section.
+ *      role eyebrow, main `<h1>` name/title, full narrative bio paragraph, and an
+ *      actions row containing the Projects smooth-scroll CTA and an outbound CV button.
  *      All hero copy is resolved locally from `useLanguage()` with
  *      bulletproof dotted-path lookups + hardcoded fallbacks, so the text
  *      always renders even if `t` or the dictionary is temporarily
@@ -109,21 +109,27 @@ function Home() {
 
   /*
    * Bulletproof hero copy resolution (Milestone 9 fix):
-   * `t` is a dotted-path resolver (`t('hero.role')`), never an object, so
-   * the previous `t('hero').role` access silently returned `undefined`
-   * and blanked the hero. Every string below is resolved directly through
-   * `t` with a hardcoded fallback, so the hero text always renders even
-   * if `t` or `translations[language]` is temporarily undefined during
-   * first hydration.
+   * `t` is a dotted-path resolver (`t('hero.role')`), never an object.
+   * Every string below is resolved directly through `t` with a hardcoded fallback,
+   * so the hero text always renders even if `t` or `translations[language]` is temporarily
+   * undefined during first hydration.
    */
   const isFr = language === 'fr';
   const heroRole = t?.('hero.role') || (isFr ? 'Développeur Full-Stack' : 'Full-Stack Developer');
-  const heroPitch = t?.('hero.pitch')
-    || (isFr
-      ? 'Je conçois des expériences web performantes et accessibles de bout en bout.'
-      : 'I craft performant, accessible web experiences end to end.');
-  const heroCta = t?.('hero.cta') || (isFr ? 'Découvrir mes projets' : 'Explore my work');
-  const heroEyebrow = t?.('hero.eyebrow') || (isFr ? 'Salut, je suis' : 'Hi, I am');
+  const heroEyebrow = t?.('hero.eyebrow') || (isFr ? 'SALUT, JE SUIS' : 'HELLO, I AM');
+  const heroCta = t?.('hero.cta') || (isFr ? 'Découvrir mes projets' : 'Discover my projects');
+  const heroCv = t?.('hero.cv') || (isFr ? 'Mon CV' : 'My CV');
+  const heroCvAria = isFr ? 'Ouvrir mon CV au format PDF' : 'Open my CV in PDF format';
+
+  /*
+   * Full narrative introduction restored exactly from design:
+   */
+  const heroBio = t?.('hero.bio') || (isFr
+    ? "Développeur passionné à 50 ans, j'aborde le code comme un artisanat d'ingénierie où chaque détail compte. Après des années à explorer les structures visuelles et sonores, j'investis aujourd'hui toute cette exigence dans le développement web moderne. De l'écosystème React aux APIs REST sous Node.js & MongoDB, je livre des solutions performantes, sobres et fiables, guidé par une curiosité intacte et une discipline éprouvée."
+    : "Passionate developer at 50, I approach code as an engineering craft where every detail matters. After years of exploring visual and sonic structures, I channel this rigor into modern web engineering. From the React ecosystem to Node.js & MongoDB REST APIs, I deliver high-performance, sober, and reliable solutions, driven by genuine curiosity and proven discipline.");
+
+  // Résout vers public/documents/AlexD_CV.pdf avec le bon préfixe GitHub Pages
+  const cvHref = resolveAssetUrl('/documents/AlexD_CV.pdf');
 
   const parcours = {
     title: t?.('parcours.title') || (isFr ? 'Parcours & Création' : 'Journey & Creative Background'),
@@ -213,15 +219,27 @@ function Home() {
             <span className="home-section__role">{heroRole}</span>
           </h1>
 
-          <p className="home-section__subtitle">{heroPitch}</p>
+          <p className="home-section__bio">{heroBio}</p>
 
-          <button
-            type="button"
-            className="home-section__cta"
-            onClick={handleExploreProjects}
-          >
-            {heroCta}
-          </button>
+          <div className="home-section__actions">
+            <button
+              type="button"
+              className="home-section__cta home-section__cta--primary"
+              onClick={handleExploreProjects}
+            >
+              {heroCta}
+            </button>
+
+            <a
+              href={cvHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="home-section__cta home-section__cta--secondary"
+              aria-label={heroCvAria}
+            >
+              {heroCv}
+            </a>
+          </div>
         </div>
       </div>
 
