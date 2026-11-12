@@ -216,7 +216,15 @@ const projectsData = [
     ],
     tags: ["Node.js", "Express", "MongoDB", "Mongoose", "JWT", "Sharp / WebP", "REST API"],
     githubUrl: "https://github.com/OpenClassrooms-Student-Center/P7-Dev-Web-livres.git"
-  }
+  },
+
+  {
+  id: '',
+  title: '',
+  category: '',
+  images: null, // Normalement fatal pour un .map()
+  tags: undefined,
+}
 ];
 
 export { projectsData };

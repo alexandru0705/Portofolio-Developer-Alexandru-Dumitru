@@ -65,6 +65,7 @@ function Contact() {
     : fallback);
   const isFr = language === 'fr';
 
+  // Defensive timer cleanup (session rule 1) — clears any pending reset timer
   function clearResetTimer() {
     if (timeoutRef.current !== null) {
       if (typeof window !== 'undefined') {
@@ -74,6 +75,8 @@ function Contact() {
     }
   }
 
+  // Schedules a status reset to `idle` after 6 seconds (session rule 1), 
+  // also resets any existing timer to avoid multiple resets stacking up.
   function scheduleStatusReset() {
     clearResetTimer();
     if (typeof window === 'undefined') {
