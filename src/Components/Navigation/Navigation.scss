@@ -148,6 +148,50 @@
     gap: 0.75rem;
   }
 
+  &__lang-switch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-start;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    background-color: rgba($accent-color, 0.08);
+    border: 1px solid rgba($text-main, 0.15);
+  }
+
+  &__lang-btn {
+    background: transparent;
+    border: none;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: $text-muted;
+    opacity: 1;
+    cursor: pointer;
+    padding: 0.15rem 0.35rem;
+    border-radius: 0.25rem;
+    transition: color $transition-base;
+
+    &:hover {
+      color: $accent-color;
+    }
+
+    &--active {
+      color: $accent-color;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $accent-color;
+      outline-offset: 2px;
+    }
+  }
+
+  &__lang-divider {
+    font-size: 0.75rem;
+    color: rgba($text-muted, 0.4);
+  }
+
   &__social {
     display: flex;
     flex-direction: column;

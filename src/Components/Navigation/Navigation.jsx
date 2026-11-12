@@ -53,12 +53,9 @@ import './Navigation.scss';
  *   - `body` scroll is locked while the drawer is open; the lock is always
  *     released on toggle-off and on unmount (defensive rule 2).
  *
- * Bilingual contract (Milestone 9 refactor):
- *   - `useLanguage()` is consumed for localized copy only (brand role,
- *     nav labels, "Say hello", CV button). The FR | EN language toggle is the single
- *     canonical switcher and lives EXCLUSIVELY in the Home hero
- *     (`Home.jsx`, `.home-section__lang-switch`) — this sidebar carries no
- *     language controls, and neither does the top Header.
+ * Bilingual contract:
+ *   - `useLanguage()` provides localized copy (brand role, nav labels,
+ *     "Say hello", CV button) and powers the sidebar `FR | EN` switcher.
  *
  * Document Assets & GitHub Pages Subpath:
  *   - Static files located in `/public/documents/` are resolved defensively
@@ -189,7 +186,7 @@ function sanitizeSocialLinks(links) {
 }
 
 function Navigation() {
-  const { language, t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [activeSection, setActiveSection] = useState('banner');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const activeSectionRef = useRef('banner');
@@ -447,6 +444,19 @@ function Navigation() {
     }
   }
 
+  function handleLanguageSwitch(targetLanguage) {
+    if (
+      typeof setLanguage === 'function' &&
+      (targetLanguage === 'fr' || targetLanguage === 'en')
+    ) {
+      try {
+        setLanguage(targetLanguage);
+      } catch (langMutationError) {
+        void langMutationError;
+      }
+    }
+  }
+
   function handleToggleOpen() {
     setDrawerOpen(true);
   }
@@ -530,6 +540,36 @@ function Navigation() {
           </nav>
 
           <div className="navigation__footer">
+            <div
+              className="navigation__lang-switch"
+              role="group"
+              aria-label="Language selector"
+            >
+              <button
+                type="button"
+                className={`navigation__lang-btn${
+                  language === 'fr' ? ' navigation__lang-btn--active' : ''
+                }`}
+                onClick={() => handleLanguageSwitch('fr')}
+                aria-pressed={language === 'fr'}
+              >
+                FR
+              </button>
+              <span className="navigation__lang-divider" aria-hidden="true">
+                |
+              </span>
+              <button
+                type="button"
+                className={`navigation__lang-btn${
+                  language === 'en' ? ' navigation__lang-btn--active' : ''
+                }`}
+                onClick={() => handleLanguageSwitch('en')}
+                aria-pressed={language === 'en'}
+              >
+                EN
+              </button>
+            </div>
+
             <div className="navigation__social">
               {socialLinks.map((entry) => (
                 <a

@@ -2,10 +2,10 @@
 @use '../../Styles/Variables' as *;
 
 /*
- * Skills — Milestone 5 (Harmonized Vertical Layout & Fixed-Rhythm Badges)
- * --------------------------------------------------------------------------
- * Spreads vertically across the 100vh frame to match the Projects section.
- * Enforces uniform font size, line-height, and minimum row height across all skills.
+- Skills — Milestone 5 (Harmonized Vertical Layout & Fixed-Rhythm Badges)
+- --------------------------------------------------------------------------
+- Spreads vertically across the 100vh frame to match the Projects section.
+- Enforces uniform font size, line-height, and minimum row height across all skills.
  */
 
 .skills-section {
@@ -344,10 +344,17 @@
     }
 
     &__tabs {
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
       gap: 0.5rem;
     }
 
     &__tab {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      box-sizing: border-box;
       padding: 0.6rem 1rem;
       font-size: 0.88rem;
     }

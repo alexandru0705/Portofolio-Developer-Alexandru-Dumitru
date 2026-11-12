@@ -495,6 +495,36 @@ function Header() {
                   : link.labelKey}
               </button>
             ))}
+
+            <div
+              className="site-header__lang-switch"
+              role="group"
+              aria-label="Language selector"
+            >
+              <button
+                type="button"
+                className={`site-header__lang-btn${
+                  language === 'fr' ? ' site-header__lang-btn--active' : ''
+                }`}
+                onClick={() => handleLanguageSwitch('fr')}
+                aria-pressed={language === 'fr'}
+              >
+                FR
+              </button>
+              <span className="site-header__lang-divider" aria-hidden="true">
+                |
+              </span>
+              <button
+                type="button"
+                className={`site-header__lang-btn${
+                  language === 'en' ? ' site-header__lang-btn--active' : ''
+                }`}
+                onClick={() => handleLanguageSwitch('en')}
+                aria-pressed={language === 'en'}
+              >
+                EN
+              </button>
+            </div>
           </nav>
 
           <button

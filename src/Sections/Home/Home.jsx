@@ -19,12 +19,6 @@
  *     (FR by default, EN on demand) with guaranteed fallback strings —
  *     no hardcoded UI strings remain, no blank text is possible.
  *
- * Language switch contract: the FR | EN toggle is the single canonical
- * switcher and lives HERE, strictly inside the hero at the top right
- * (`.home-section__top-bar` → `.home-section__lang-switch`, directly above
- * `.home-section__content`). The top Header and the Navigation sidebar
- * carry NO language controls.
- *
  * Session rules honored:
  *   - Standard function declaration first; `export default Home;` strictly
  *     at the very bottom.
@@ -105,7 +99,7 @@ function resolveAssetUrl(path) {
 }
 
 function Home() {
-  const { language, setLanguage, t } = useLanguage();
+  const { language, t } = useLanguage();
 
   /*
    * Bulletproof hero copy resolution (Milestone 9 fix):
@@ -189,28 +183,6 @@ function Home() {
   return (
     <>
       <div className="home-section">
-        <div className="home-section__top-bar">
-          <div className="home-section__lang-switch" role="group" aria-label="Language selector">
-            <button
-              type="button"
-              className={`home-section__lang-btn ${language === 'fr' ? 'home-section__lang-btn--active' : ''}`}
-              onClick={() => setLanguage('fr')}
-              aria-pressed={language === 'fr'}
-            >
-              FR
-            </button>
-            <span className="home-section__lang-divider" aria-hidden="true">|</span>
-            <button
-              type="button"
-              className={`home-section__lang-btn ${language === 'en' ? 'home-section__lang-btn--active' : ''}`}
-              onClick={() => setLanguage('en')}
-              aria-pressed={language === 'en'}
-            >
-              EN
-            </button>
-          </div>
-        </div>
-
         <div className="home-section__content">
           <p className="home-section__eyebrow">{heroEyebrow}</p>
 
